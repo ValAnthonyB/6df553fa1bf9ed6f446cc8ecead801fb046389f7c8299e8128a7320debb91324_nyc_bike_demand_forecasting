@@ -1,0 +1,17 @@
+[project]
+name = "6df553fa1bf9ed6f446cc8ecead801fb046389f7c8299e8128a7320debb91324-nyc-bike-demand-forecasting"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10.18"
+dependencies = [
+    "jupyterlab>=4.4.4",
+    "matplotlib>=3.10.3",
+    "numpy>=2.2.6",
+    "pandas>=2.3.1",
+    "polars>=1.31.0",
+    "pyarrow>=20.0.0",
+    "scikit-learn>=1.7.0",
+    "seaborn>=0.13.2",
+    "xgboost>=3.0.2",
+]
