@@ -1,15 +1,42 @@
+from lightgbm import LGBMRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 import numpy as np
 import pandas as pd
 import os
 
+
 def calculate_metrics(
-    model, 
-    X_train, y_train,
-    X_test, y_test, 
-    model_name="Model"
-):
-    # Predict
+    model: LGBMRegressor, 
+    X_train: pd.DataFrame, 
+    y_train: pd.DataFrame,
+    X_test: pd.Series, 
+    y_test: pd.Series, 
+    model_name: str="Model"
+) -> dict:
+    """
+    Evaluates the LightGBM regression model on the training and test datasets 
+    using RMSE, MAE, and MAPE.
+
+    Parameters:
+    ----------
+    X_train : pd.DataFrame
+        Training features.
+
+    X_test : pd.DataFrame
+        Testing features.
+
+    y_train : pd.Series
+        Training labels.
+
+    y_test : pd.Series
+        Testing labels.
+
+    Returns:
+    -------
+    dict
+        Dictionary containing RMSE, MAE, and MAPE for both the training and test sets.
+    """
+    # Make predictions
     y_pred_train = model.predict(X_train)
     y_pred_test  = model.predict(X_test)
 
@@ -41,26 +68,29 @@ def calculate_metrics(
     }
 
 
-def save_metrics(metrics_dict, model_name):
+def save_metrics(metrics: dict, model_name: str) -> None:
+    """
+    Exports the model metrics on the train test sets locally.
+
+    Parameters:
+    ----------
+    metrics : dict
+        Dictionary containing the RMSE, MAE, and MAPE scores on the train
+        and test sets.
+
+    model_name : str
+        Name of the model.
+    """
     save_path = f"reports/{model_name}.csv"
 
-    rows = []
-    for split, metrics in metrics_dict.items():
-        for metric_name, value in metrics.items():
-            rows.append({
-                "model_name": model_name,
-                "split": split,
-                "metric": metric_name,
-                "value": round(value, 4)
-            })
-    
-    df_metrics = pd.DataFrame(rows)
+    # Convert to DataFrame
+    metrics_df = pd.DataFrame.from_dict(metrics, orient="index").reset_index()
+
+    # Rename columns
+    metrics_df.columns = ["Dataset", "RMSE", "MAE", "MAPE"]
     
     # Create directory if it doesn't exist
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    os.makedirs("reports", exist_ok=True)
 
     # Save as CSV (append if file exists, otherwise write header)
-    write_header = not os.path.exists(save_path)
-    df_metrics.to_csv(save_path, mode='a', index=False, header=write_header)
-
-    print(f"Metrics saved to: {save_path}")
+    metrics_df.to_csv(save_path, index=False)

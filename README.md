@@ -10,10 +10,17 @@ The [Citi Bike NYC System Dataset](https://citibikenyc.com/system-data)
 ├── notebooks/          # Jupyter notebooks for EDA and modeling
 ├── models/             # Trained model artifacts
 ├── reports/            # Model performance results in .CSV files
-├── src/                # Source code for data processing, feature engineering and training
+├── src/                # Project scripts
+│   ├── preprocessing/  # Original time series data files
+│   ├── model_training/ # 
+│   └── evaluation/     # Cleaned and feature-engineered dataset
 ├── pyproject.toml      # Project dependencies
 └── README.md           # Project overview and how to use
 ```
+
+## Project Overview
+
+## How to Get the Data
 
 ## Setup and Instructions
 1. Installed Python from the [Python website](https://www.python.org/) 
@@ -21,6 +28,11 @@ The [Citi Bike NYC System Dataset](https://citibikenyc.com/system-data)
 3. Setup Git Bash terminal in VS Code
 4. Used `uv init` in project directory
 5. Changed Python version from 3.12 to 3.10.18 in the pyproject.toml and .python-version files. Ran `uv sync` to ensure that we are using Python 3.10 in the python environment.
-6. Ran `uv add numpy pandas polars matplotlib scikit-learn xgboost lightgbm optuna jupyterlab` to install essential packages.
+6. Ran `uv add numpy pandas pyarrow polars matplotlib scikit-learn xgboost lightgbm optuna jupyterlab joblib` to install essential packages.
 
 To run the application use `uv run ./run_pipeline.py`.
+
+
+## Reflection
+
+## Pre-Commit Configuration

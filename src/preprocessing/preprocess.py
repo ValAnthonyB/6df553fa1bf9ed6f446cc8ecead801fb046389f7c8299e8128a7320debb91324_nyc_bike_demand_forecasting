@@ -1,10 +1,24 @@
+from pathlib import Path
 import pandas as pd
-from datetime import datetime, date
+from datetime import date
 from sklearn.preprocessing import SplineTransformer
 
-def process_dataset(data_dir="../data/raw/"):
+def process_dataset(raw_data_dir: str) -> pd.DataFrame:
+    """
+    Loads Parquet files from the raw data folder, aggregates daily ride counts, 
+    filters dates from 2023 onwards, and ensures the date column is in datetime format.
+
+    Parameters:
+        raw_data_dir (str): Path to the raw data containing many parquet files.
+
+    Returns:
+        pd.DataFrame: DataFrame with 'ride_date' and 'total_rides' columns.
+    """
+
+    # Combine daily time series data from all raw parquet files 
+    data_path = Path(raw_data_dir)
     df = (
-        pd.read_parquet(data_dir, engine="pyarrow")
+        pd.read_parquet(data_path, engine="pyarrow")
         .groupby("ride_date")
         .agg(total_rides=("unique_rides", "sum"))
         .reset_index()
@@ -13,20 +27,38 @@ def process_dataset(data_dir="../data/raw/"):
         .reset_index(drop=True)
     )
 
+    # Enforce ride_date to be datetime variable
     df['ride_date'] = pd.to_datetime(df['ride_date'])
     
     return df
 
 
-def feature_engineering(df):
+def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Applies feature engineering on the time series dataframe.
+
+    We use these feature engineering techniques
+    1. Extract date-based features from ride_date (i.e. day of week, 
+        day number of the month, month number, week number of the year)
+    2. Extract lagged features across different time lags
+    3. Compute moving-average features across different time lags
+    4. Tagging of holidays
+    5. Spline transformations on the day of month feature
+    6. Creation of the target variable column
+
+        Parameters:
+    ----------
+    df : pd.DataFrame
+        A pandas DataFrame containing the 'ride_date' (datetime) and 
+        'total_rides' (integer) columns. 
+
+    Returns:
+    -------
+    pd.DataFrame
+        A transformed DataFrame with engineered features and target variable.
+    """
+
     df = df.copy()
-
-    # List of lags
-    lags = [1, 2, 3, 4, 5, 6, 7, 14, 21, 28, 30, 54, 60]
-
-    # Create lag features
-    for lag in lags:
-        df[f'lag-{lag}d'] = df['total_rides'].shift(lag)
 
     # Date-based features
     df['day_of_week'] = df['ride_date'].dt.dayofweek
@@ -35,19 +67,19 @@ def feature_engineering(df):
     df['week_of_year'] = df['ride_date'].dt.isocalendar().week
     df['day_of_year'] = df['ride_date'].dt.dayofyear
 
+    # List of lags
+    lags = [1, 2, 3, 4, 5, 6, 7, 14, 21, 28, 30, 54, 60]
+
+    # Create lag features
+    for lag in lags:
+        df[f'lag-{lag}d'] = df['total_rides'].shift(lag)
+
     # Moving average features
     ma_windows = [3, 7, 14, 30]
 
     # Create rolling mean features including the current value
     for window in ma_windows:
         df[f'ma_{window}d'] = df['total_rides'].rolling(window=window).mean()
-
-    # Make splines on the time-based features
-    dow_spline = SplineTransformer(n_knots=10, degree=3, include_bias=False)
-    dow_spline.fit(df[['month_day']])  # Fit only on train
-    X_md_spline = dow_spline.transform(df[['month_day']])
-    spline_cols = [f'month_day_spline_{i}' for i in range(X_md_spline.shape[1])]
-    df[spline_cols] = X_md_spline
 
     # Holidays
     nyc_holidays = [
@@ -96,10 +128,16 @@ def feature_engineering(df):
         '2025-12-25'   # Christmas Day
     ]
 
-
     # Convert holiday_dates to datetime
     holiday_dates = pd.to_datetime(nyc_holidays)
     df['is_holiday'] = df['ride_date'].isin(holiday_dates).astype(int)
+
+    # Make splines on the time-based features
+    dow_spline = SplineTransformer(n_knots=10, degree=3, include_bias=False)
+    dow_spline.fit(df[['month_day']])  # Fit only on train
+    X_md_spline = dow_spline.transform(df[['month_day']])
+    spline_cols = [f'month_day_spline_{i}' for i in range(X_md_spline.shape[1])]
+    df[spline_cols] = X_md_spline
 
     # Target variable
     df['t+7d'] = df['total_rides'].shift(-7)
@@ -113,8 +151,28 @@ def feature_engineering(df):
 
     return df
 
-def split_train_test_data(df, cutoff_dt):
 
+def split_train_test_data(df: pd.DataFrame, cutoff_dt: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    We use a cutoff date to split the training and test data using these rules:
+    * Train set: ride_date <= cutoff date
+    * Test set: ride_date > cutoff date
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        DataFrame containing the feature-engineered features and labels.
+
+    cutoff_dt : str or pd.Timestamp
+        Date used to split the data.
+
+    Returns:
+    -------
+    tuple[pd.DataFrame, pd.DataFrame]
+        train_df: training set
+        test_df: test set
+    """
+     
     df = df.copy()
     
     # Convert date string to pandas timestamp
@@ -127,7 +185,36 @@ def split_train_test_data(df, cutoff_dt):
     return train_df, test_df
 
 
-def get_features_labels(train_df, test_df):
+def get_features_labels(
+    train_df: pd.DataFrame, 
+    test_df: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    """
+    Extract features and labels from training and testing DataFrames.
+
+    Parameters:
+    ----------
+    train_df : pd.DataFrame
+        Training data with features and target column.
+
+    test_df : pd.DataFrame
+        Testing data with features and target column.
+
+    Returns:
+        X_train : pd.DataFrame
+            Training features
+
+        X_test : pd.DataFrame
+            Testing features
+
+        y_train : pd.Series
+            Training target values
+
+        y_test : pd.Series
+            Testing target values
+    -------
+    tuple:
+    """
     X_train = train_df.drop(["ride_date", "t+7d"], axis=1)
     y_train = train_df["t+7d"]
 

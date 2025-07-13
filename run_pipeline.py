@@ -12,7 +12,7 @@ from datetime import date
 
 def main():
     print("Reading and processing the dataset\n")
-    df = process_dataset("data/raw/")
+    df = process_dataset(raw_data_dir="data/raw/")
 
     print("Engineering new features\n")
     df = feature_engineering(df)
