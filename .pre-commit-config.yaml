@@ -1,0 +1,12 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.3  # Use the latest stable version
+    hooks:
+      - id: ruff
+        args: [--fix]  # Auto-fix issues where possible
+      - id: ruff-format
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.7.20      # Use the latest stable version
+    hooks:
+      - id: uv-lock   # Ensures uv.lock is updated if pyproject.toml changes

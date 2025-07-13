@@ -11,11 +11,12 @@ The [Citi Bike NYC System Dataset](https://citibikenyc.com/system-data)
 ├── models/             # Trained model artifacts
 ├── reports/            # Model performance results in .CSV files
 ├── src/                # Project scripts
-│   ├── preprocessing/  # Original time series data files
-│   ├── model_training/ # 
-│   └── evaluation/     # Cleaned and feature-engineered dataset
+│   ├── preprocessing/  # Data processing, engineering, and time-series splitting
+│   ├── model_training/ # Automatically train the best lightgbm model
+│   └── evaluation/     # Evaluates model performance
 ├── pyproject.toml      # Project dependencies
-└── README.md           # Project overview and how to use
+├── README.md           # Project overview and how to use
+└── run_pipeline.py     # For running the pipeline
 ```
 
 ## Project Overview
