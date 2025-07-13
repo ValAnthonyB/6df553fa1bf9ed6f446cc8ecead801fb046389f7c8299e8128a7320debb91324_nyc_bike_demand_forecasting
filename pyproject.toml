@@ -22,3 +22,11 @@ dependencies = [
 [tool.ruff]
 line-length = 88
 target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # For PEP8 violations like spacing and indentation
+    "F",   # Remove unused imports and undefined vars
+    "I",   # Sort the import statements
+    "N",   # Enforce PEP8 naming for functions, classes, constants etc
+]
