@@ -26,7 +26,7 @@ target-version = "py310"
 [tool.ruff.lint]
 select = [
     "E",   # For PEP8 violations like spacing and indentation
-    "F",   # Remove unused imports and undefined vars
-    "I",   # Sort the import statements
+    "F",   # Remove unused imports, undefined vars, and duplicate keys
+    "I",   # Sort the import statements accordingly
     "N",   # Enforce PEP8 naming for functions, classes, constants etc
 ]
