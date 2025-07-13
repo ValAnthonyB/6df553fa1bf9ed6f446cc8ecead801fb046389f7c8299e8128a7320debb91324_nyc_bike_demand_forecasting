@@ -30,3 +30,8 @@ select = [
     "I",   # Sort the import statements accordingly
     "N",   # Enforce PEP8 naming for functions, classes, constants etc
 ]
+ignore = [
+    "N806",  # Variable in function should be lowercase
+    "N803",  # Argument name should be lowercase  
+    "N815",  # Variable in class scope should not be mixedCase
+]

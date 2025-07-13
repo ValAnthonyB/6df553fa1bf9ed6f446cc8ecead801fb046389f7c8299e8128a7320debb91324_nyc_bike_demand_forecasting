@@ -1,20 +1,25 @@
-from lightgbm import LGBMRegressor
-from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
+import os
+
 import numpy as np
 import pandas as pd
-import os
+from lightgbm import LGBMRegressor
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_absolute_percentage_error,
+    mean_squared_error,
+)
 
 
 def calculate_metrics(
-    model: LGBMRegressor, 
-    X_train: pd.DataFrame, 
-    y_train: pd.DataFrame,
-    X_test: pd.Series, 
-    y_test: pd.Series, 
-    model_name: str="Model"
+    model: LGBMRegressor,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    X_test: pd.DataFrame,
+    y_test: pd.Series,
+    model_name: str = "Model",
 ) -> dict:
     """
-    Evaluates the LightGBM regression model on the training and test datasets 
+    Evaluates the LightGBM regression model on the training and test datasets
     using RMSE, MAE, and MAPE.
 
     Parameters:
@@ -38,7 +43,7 @@ def calculate_metrics(
     """
     # Make predictions
     y_pred_train = model.predict(X_train)
-    y_pred_test  = model.predict(X_test)
+    y_pred_test = model.predict(X_test)
 
     # Train metrics
     rmse_train = np.sqrt(mean_squared_error(y_train, y_pred_train))
@@ -64,7 +69,7 @@ def calculate_metrics(
     # Return all metrics in a structured format
     return {
         "train": {"rmse": rmse_train, "mae": mae_train, "mape": mape_train},
-        "test":  {"rmse": rmse_test,  "mae": mae_test,  "mape": mape_test}
+        "test": {"rmse": rmse_test, "mae": mae_test, "mape": mape_test},
     }
 
 
@@ -88,7 +93,7 @@ def save_metrics(metrics: dict, model_name: str) -> None:
 
     # Rename columns
     metrics_df.columns = ["Dataset", "RMSE", "MAE", "MAPE"]
-    
+
     # Create directory if it doesn't exist
     os.makedirs("reports", exist_ok=True)
 
