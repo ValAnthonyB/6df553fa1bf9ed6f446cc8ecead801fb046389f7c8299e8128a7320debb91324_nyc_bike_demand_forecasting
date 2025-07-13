@@ -52,7 +52,9 @@ def get_best_lightgbm_model(
             "boosting_type": "gbdt",
             "n_estimators": 200,
             "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
-            "num_leaves": trial.suggest_int("num_leaves", 4, 64),
+            "num_leaves": trial.suggest_int(
+                "num_leaves", 4, 128
+            ),  # LGBM can be much deeper
             # Regularization
             "lambda_l1": trial.suggest_float("lambda_l1", 0.1, 10.0),
             "lambda_l2": trial.suggest_float("lambda_l2", 0.1, 10.0),
@@ -79,7 +81,7 @@ def get_best_lightgbm_model(
         rmse = np.sqrt(mean_squared_error(y_test, y_pred))
         return rmse
 
-    # Run optimization
+    # Run hyperparameter optimization
     study = optuna.create_study(direction="minimize")
     study.optimize(objective, n_trials=n_trials)
 
@@ -94,7 +96,7 @@ def get_best_lightgbm_model(
         random_state=42,
         verbosity=-1,  # Suppress model messages
     )
-    best_lgbm_model.fit(X_train, y_train)  # No verbose parameter needed here
+    best_lgbm_model.fit(X_train, y_train)
 
     return best_lgbm_model
 

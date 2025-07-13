@@ -20,18 +20,17 @@ def main():
 
     print("Engineering new features\n")
     df = feature_engineering(df)
-
-    print(f"Feature engineered dataset: {df.shape}")
+    print(f"Feature engineered dataset: {df.shape}\n")
 
     train_df, test_df = split_train_test_data(df, "2024-05-20")
-    print(f"\nTrain dataset: {train_df.shape}")
+    print(f"Train dataset: {train_df.shape}")
     print(f"Test dataset: {test_df.shape}\n")
 
     # Get the features and target variable
     X_train, X_test, y_train, y_test = get_features_labels(train_df, test_df)
 
     # Model training with optuna
-    print("Model training using LightGBM with hyperparameter tuning Optuna.")
+    print("Model training using LightGBM with hyperparameter tuning Optuna.\n")
     today_str = date.today().strftime(
         "%Y-%m-%d"
     )  # Get today's date in YYYY-MM-DD format

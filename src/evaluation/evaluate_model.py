@@ -20,7 +20,7 @@ def calculate_metrics(
 ) -> dict:
     """
     Evaluates the LightGBM regression model on the training and test datasets
-    using RMSE, MAE, and MAPE.
+    using RMSE, MAE, and MAPE metrics.
 
     Parameters:
     ----------
