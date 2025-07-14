@@ -1,6 +1,8 @@
 # NYC Daily Bike Demand Forecasting
-The [Citi Bike NYC System Dataset](https://citibikenyc.com/system-data)
- contains detailed trip records from the Citi Bike bicycle-sharing system in New York City. Each entry includes data like trip duration, start and end times, station locations, bike ID, and rider demographics (if available). It is used for analyzing commuting patterns, bike usage, and urban mobility. The data is already processed from a previous project by aggregating the daily total rides from January 2023 to June 2024 stored in individual parquet files and is stored in the `data/raw/` directory. The project uses a standard project folder structure:
+## Project Overview
+[Citi Bike](https://citibikenyc.com/homepage) is bike-sharing program in New York City, providing both classic pedal bikes and e-bikes for convenient and affordable transportation around the city. You can rent a bike using the Citi Bike app or the Lyft app. Pick up a bike at one station and return it to any other station.
+
+The [Citi Bike NYC System Dataset](https://citibikenyc.com/system-data) contains detailed trip records from the Citi Bike bicycle-sharing system in New York City. Each entry includes data such as a unique trip identifier, trip duration, start and end times, station locations, the bike used, and membership type. It is used for analyzing commuting patterns, bike usage, and urban mobility in New York City. The project uses a standard project folder structure:
 
 ```
 .
@@ -19,9 +21,8 @@ The [Citi Bike NYC System Dataset](https://citibikenyc.com/system-data)
 └── run_pipeline.py     # For running the pipeline
 ```
 
-## Project Overview
-
 ## How to Get the Data
+Citi Bike stores their historical trip data in an [S3 bucket](https://s3.amazonaws.com/tripdata/index.html). The data was processed from a previous project by aggregating the daily total rides from January 2023 to June 2024, which are stored in individual parquet files in the `data/raw/` directory. The aggregation code to do the aggregation is in `notebooks/1 Processing time series data.ipynb`.
 
 ## Setup and Instructions
 1. Installed Python from the [Python website](https://www.python.org/) 
@@ -33,7 +34,12 @@ The [Citi Bike NYC System Dataset](https://citibikenyc.com/system-data)
 
 To run the application use `uv run ./run_pipeline.py`.
 
+## Pre-Commit Configuration
+To enhance code quality, I used these two pre-commit hooks:
+* **Ruff** - I used Ruff to automatically check for PEP8 violations, remove unused imports, flagging undefined variables, automatically sort import statements, and enforcing PEP8 naming standards. I specifically prevented Ruff from enforcing certain naming rules in function parameter names to accomodate for common machine learning naming conventions (e.g., `X_train`, `X_test`).
+
+* **uv.lock** - Whenever the pyproject.toml file has changes, this pre-commit hook automatically synchronizes the dependencies in the uv.lock file. 
+
 
 ## Reflection
-
-## Pre-Commit Configuration
+I found this assignment very fulfilling as a data scientist who is interested in transitioning to a machine learning engineer or AI engineer. To preface, I have zero experience in software engineering. Some of my models at work are stuck in Jupyter notebooks and they lack a simple .py script to operationalize the entire data pipeline. I enrolled in this subject to learn the best practices and use tools commonly used in operationalizing machine learning models. Since the first lecture, I have transitioned from using `poetry` to `uv`, incorporated pre-commit hooks, and I have been using VS code a lot more in my projects. I look forward to eventually incorporating new features like scheduling, docker containerization, Flask, and model monitoring to this project in the future!

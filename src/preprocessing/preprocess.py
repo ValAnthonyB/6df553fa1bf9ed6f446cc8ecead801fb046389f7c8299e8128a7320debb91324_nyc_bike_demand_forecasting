@@ -1,11 +1,13 @@
-from pathlib import Path
-import pandas as pd
 from datetime import date
+from pathlib import Path
+
+import pandas as pd
 from sklearn.preprocessing import SplineTransformer
+
 
 def process_dataset(raw_data_dir: str) -> pd.DataFrame:
     """
-    Loads Parquet files from the raw data folder, aggregates daily ride counts, 
+    Loads Parquet files from the raw data folder, aggregates daily ride counts,
     filters dates from 2023 onwards, and ensures the date column is in datetime format.
 
     Parameters:
@@ -15,7 +17,7 @@ def process_dataset(raw_data_dir: str) -> pd.DataFrame:
         pd.DataFrame: DataFrame with 'ride_date' and 'total_rides' columns.
     """
 
-    # Combine daily time series data from all raw parquet files 
+    # Combine daily time series data from all raw parquet files
     data_path = Path(raw_data_dir)
     df = (
         pd.read_parquet(data_path, engine="pyarrow")
@@ -28,17 +30,17 @@ def process_dataset(raw_data_dir: str) -> pd.DataFrame:
     )
 
     # Enforce ride_date to be datetime variable
-    df['ride_date'] = pd.to_datetime(df['ride_date'])
-    
+    df["ride_date"] = pd.to_datetime(df["ride_date"])
+
     return df
 
 
-def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
+def feature_engineering(df: pd.DataFrame, export_dataset: bool = True) -> pd.DataFrame:
     """
     Applies feature engineering on the time series dataframe.
 
     We use these feature engineering techniques
-    1. Extract date-based features from ride_date (i.e. day of week, 
+    1. Extract date-based features from ride_date (i.e. day of week,
         day number of the month, month number, week number of the year)
     2. Extract lagged features across different time lags
     3. Compute moving-average features across different time lags
@@ -49,8 +51,8 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
         Parameters:
     ----------
     df : pd.DataFrame
-        A pandas DataFrame containing the 'ride_date' (datetime) and 
-        'total_rides' (integer) columns. 
+        A pandas DataFrame containing the 'ride_date' (datetime) and
+        'total_rides' (integer) columns.
 
     Returns:
     -------
@@ -61,98 +63,118 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     # Date-based features
-    df['day_of_week'] = df['ride_date'].dt.dayofweek
-    df['month_day'] = df['ride_date'].dt.day
-    df['month'] = df['ride_date'].dt.month
-    df['week_of_year'] = df['ride_date'].dt.isocalendar().week
-    df['day_of_year'] = df['ride_date'].dt.dayofyear
+    df["day_of_week"] = df["ride_date"].dt.dayofweek
+    df["month_day"] = df["ride_date"].dt.day
+    df["month"] = df["ride_date"].dt.month
+    df["week_of_year"] = df["ride_date"].dt.isocalendar().week
+    df["day_of_year"] = df["ride_date"].dt.dayofyear
 
     # List of lags
     lags = [1, 2, 3, 4, 5, 6, 7, 14, 21, 28, 30, 54, 60]
 
     # Create lag features
     for lag in lags:
-        df[f'lag-{lag}d'] = df['total_rides'].shift(lag)
+        df[f"lag-{lag}d"] = df["total_rides"].shift(lag)
 
     # Moving average features
     ma_windows = [3, 7, 14, 30]
 
     # Create rolling mean features including the current value
     for window in ma_windows:
-        df[f'ma_{window}d'] = df['total_rides'].rolling(window=window).mean()
+        df[f"ma_{window}d"] = df["total_rides"].rolling(window=window).mean()
 
     # Holidays
     nyc_holidays = [
-        '2023-01-01',  # New Year's Day
-        '2023-01-02',  # New Year's Day (Observed)
-        '2023-01-16',  # Martin Luther King Jr. Day
-        '2023-02-12',  # Lincoln's Birthday
-        '2023-02-20',  # Presidents' Day (Washington’s Birthday)
-        '2023-05-29',  # Memorial Day
-        '2023-06-19',  # Juneteenth
-        '2023-07-04',  # Independence Day
-        '2023-09-04',  # Labor Day
-        '2023-10-09',  # Columbus Day
-        '2023-11-07',  # Election Day
-        '2023-11-10',  # Veterans Day (Observed)
-        '2023-11-11',  # Veterans Day
-        '2023-11-23',  # Thanksgiving
-        '2023-12-25',  # Christmas Day
-
-        '2024-01-01',  # New Year's Day
-        '2024-01-15',  # Martin Luther King Jr. Day
-        '2024-02-12',  # Lincoln's Birthday
-        '2024-02-19',  # Presidents' Day
-        '2024-05-27',  # Memorial Day
-        '2024-06-19',  # Juneteenth
-        '2024-07-04',  # Independence Day
-        '2024-09-02',  # Labor Day
-        '2024-10-14',  # Columbus Day
-        '2024-11-05',  # Election Day
-        '2024-11-11',  # Veterans Day
-        '2024-11-28',  # Thanksgiving
-        '2024-12-25',  # Christmas Day
-
-        '2025-01-01',  # New Year's Day
-        '2025-01-20',  # Martin Luther King Jr. Day
-        '2025-02-12',  # Lincoln's Birthday
-        '2025-02-17',  # Presidents' Day
-        '2025-05-26',  # Memorial Day
-        '2025-06-19',  # Juneteenth
-        '2025-07-04',  # Independence Day
-        '2025-09-01',  # Labor Day
-        '2025-10-13',  # Columbus Day
-        '2025-11-04',  # Election Day
-        '2025-11-11',  # Veterans Day
-        '2025-11-27',  # Thanksgiving
-        '2025-12-25'   # Christmas Day
+        "2023-01-01",  # New Year's Day
+        "2023-01-02",  # New Year's Day (Observed)
+        "2023-01-16",  # Martin Luther King Jr. Day
+        "2023-02-12",  # Lincoln's Birthday
+        "2023-02-20",  # Presidents' Day (Washington’s Birthday)
+        "2023-05-29",  # Memorial Day
+        "2023-06-19",  # Juneteenth
+        "2023-07-04",  # Independence Day
+        "2023-09-04",  # Labor Day
+        "2023-10-09",  # Columbus Day
+        "2023-11-07",  # Election Day
+        "2023-11-10",  # Veterans Day (Observed)
+        "2023-11-11",  # Veterans Day
+        "2023-11-23",  # Thanksgiving
+        "2023-12-25",  # Christmas Day
+        "2024-01-01",  # New Year's Day
+        "2024-01-15",  # Martin Luther King Jr. Day
+        "2024-02-12",  # Lincoln's Birthday
+        "2024-02-19",  # Presidents' Day
+        "2024-05-27",  # Memorial Day
+        "2024-06-19",  # Juneteenth
+        "2024-07-04",  # Independence Day
+        "2024-09-02",  # Labor Day
+        "2024-10-14",  # Columbus Day
+        "2024-11-05",  # Election Day
+        "2024-11-11",  # Veterans Day
+        "2024-11-28",  # Thanksgiving
+        "2024-12-25",  # Christmas Day
+        "2025-01-01",  # New Year's Day
+        "2025-01-20",  # Martin Luther King Jr. Day
+        "2025-02-12",  # Lincoln's Birthday
+        "2025-02-17",  # Presidents' Day
+        "2025-05-26",  # Memorial Day
+        "2025-06-19",  # Juneteenth
+        "2025-07-04",  # Independence Day
+        "2025-09-01",  # Labor Day
+        "2025-10-13",  # Columbus Day
+        "2025-11-04",  # Election Day
+        "2025-11-11",  # Veterans Day
+        "2025-11-27",  # Thanksgiving
+        "2025-12-25",  # Christmas Day
     ]
 
     # Convert holiday_dates to datetime
     holiday_dates = pd.to_datetime(nyc_holidays)
-    df['is_holiday'] = df['ride_date'].isin(holiday_dates).astype(int)
+    df["is_holiday"] = df["ride_date"].isin(holiday_dates).astype(int)
 
     # Make splines on the time-based features
     dow_spline = SplineTransformer(n_knots=10, degree=3, include_bias=False)
-    dow_spline.fit(df[['month_day']])  # Fit only on train
-    X_md_spline = dow_spline.transform(df[['month_day']])
-    spline_cols = [f'month_day_spline_{i}' for i in range(X_md_spline.shape[1])]
+    dow_spline.fit(df[["month_day"]])  # Fit only on train
+    X_md_spline = dow_spline.transform(df[["month_day"]])
+    spline_cols = [f"month_day_spline_{i}" for i in range(X_md_spline.shape[1])]
     df[spline_cols] = X_md_spline
 
     # Target variable
-    df['t+7d'] = df['total_rides'].shift(-7)
+    df["t+7d"] = df["total_rides"].shift(-7)
 
     # Drop rows with NaNs
     df = (
         df
-        #.drop("total_rides", axis=1)
+        # .drop("total_rides", axis=1)
         .dropna()
     )
 
     return df
 
 
-def split_train_test_data(df: pd.DataFrame, cutoff_dt: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+def export_processed_data(df: pd.DataFrame, export_dir: str) -> None:
+    """
+    Exports the feature engineered dataset to the processed directory.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        DataFrame containing the feature-engineered dataset.
+
+    export_dir : str
+        Path to export the feature-engineered dataset.
+    """
+
+    # Export dataset
+    filename = f"{export_dir}/feature_engineered_data.parquet"
+    df.to_parquet(filename, compression="gzip", index=False)
+
+    print(f"Exported feature-engineered data to {export_dir}")
+
+
+def split_train_test_data(
+    df: pd.DataFrame, cutoff_dt: str
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     We use a cutoff date to split the training and test data using these rules:
     * Train set: ride_date <= cutoff date
@@ -172,22 +194,21 @@ def split_train_test_data(df: pd.DataFrame, cutoff_dt: str) -> tuple[pd.DataFram
         train_df: training set
         test_df: test set
     """
-     
+
     df = df.copy()
-    
+
     # Convert date string to pandas timestamp
     cutoff_dt = pd.Timestamp(cutoff_dt)
 
     # Time-based split
-    train_df = df[df['ride_date'] <= cutoff_dt].copy()
-    test_df  = df[(df['ride_date'] > cutoff_dt)].copy()
+    train_df = df[df["ride_date"] <= cutoff_dt].copy()
+    test_df = df[(df["ride_date"] > cutoff_dt)].copy()
 
     return train_df, test_df
 
 
 def get_features_labels(
-    train_df: pd.DataFrame, 
-    test_df: pd.DataFrame
+    train_df: pd.DataFrame, test_df: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     """
     Extract features and labels from training and testing DataFrames.

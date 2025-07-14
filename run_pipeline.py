@@ -5,6 +5,7 @@ import optuna
 from src.evaluation.evaluate_model import calculate_metrics, save_metrics
 from src.model_training.training import export_model, get_best_lightgbm_model
 from src.preprocessing.preprocess import (
+    export_processed_data,
     feature_engineering,
     get_features_labels,
     process_dataset,
@@ -18,9 +19,13 @@ def main():
     print("Reading and processing the dataset\n")
     df = process_dataset(raw_data_dir="data/raw/")
 
+    # Feature engineering step
     print("Engineering new features\n")
     df = feature_engineering(df)
     print(f"Feature engineered dataset: {df.shape}\n")
+
+    # Export the feature-engineered data
+    export_processed_data(df, "data/processed/")
 
     train_df, test_df = split_train_test_data(df, "2024-05-20")
     print(f"Train dataset: {train_df.shape}")
