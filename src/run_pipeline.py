@@ -2,21 +2,21 @@ from datetime import date
 
 import optuna
 
-from src.data_preprocessing import (
+from data_preprocessing import (
     get_features_labels,
     process_dataset,
     split_train_test_data,
 )
-from src.evaluate_model import calculate_metrics, save_metrics
-from src.feature_engineering import export_feature_eng_data, feature_eng
-from src.training import export_model, get_best_lightgbm_model
+from evaluate_model import calculate_metrics, save_metrics
+from feature_engineering import export_feature_eng_data, feature_eng
+from training import export_model, get_best_lightgbm_model
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 
 def main():
     print("Reading and processing the dataset\n")
-    df = process_dataset(raw_data_dir="data/raw/")
+    df = process_dataset(raw_data_dir="../data/raw/")
 
     # Feature engineering step
     print("Engineering new features\n")
@@ -24,7 +24,7 @@ def main():
     print(f"Feature engineered dataset: {df.shape}\n")
 
     # Export the feature-engineered data
-    export_feature_eng_data(df, "data/processed/")
+    export_feature_eng_data(df, "../data/processed/")
 
     train_df, test_df = split_train_test_data(df, "2024-05-20")
     print(f"Train dataset: {train_df.shape}")
@@ -43,7 +43,7 @@ def main():
 
     # Export the model as a joblib file
     print("Exporting model\n")
-    export_model(model, f"models/{model_name}.joblib")
+    export_model(model, f"../models/{model_name}.joblib")
 
     # Evaluate the model
     metrics_df = calculate_metrics(

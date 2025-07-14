@@ -86,7 +86,7 @@ def save_metrics(metrics: dict, model_name: str) -> None:
     model_name : str
         Name of the model.
     """
-    save_path = f"reports/{model_name}.csv"
+    save_path = f"../reports/{model_name}.csv"
 
     # Convert to DataFrame
     metrics_df = pd.DataFrame.from_dict(metrics, orient="index").reset_index()
