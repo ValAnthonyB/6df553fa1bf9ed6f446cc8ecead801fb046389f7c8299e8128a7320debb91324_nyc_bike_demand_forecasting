@@ -154,7 +154,7 @@ def feature_engineering(df: pd.DataFrame, export_dataset: bool = True) -> pd.Dat
 
 def export_processed_data(df: pd.DataFrame, export_dir: str) -> None:
     """
-    Exports the feature engineered dataset to the processed directory.
+    Exports the feature engineered dataset to the processed directory in parquet format.
 
     Parameters:
     ----------
