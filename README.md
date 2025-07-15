@@ -7,7 +7,7 @@ The [Citi Bike NYC System Dataset](https://citibikenyc.com/system-data) contains
 I originally used this dataset late last year to learn new techniques in time series forecasting using gradient boosting models, while also studying MLOps best practices on the side. It is a good dataset for studying since it is a real-world dataset and Citi Bike regularly uploads new data on a monthly basis, so there is an opportunity to incorporate data drift methods and deploy it in the cloud. 
 
 ## How to Get the Data
-Citi Bike stores their historical trip data in an [S3 bucket](https://s3.amazonaws.com/tripdata/index.html). The data was processed from a previous project by aggregating the daily total rides from January 2023 to June 2024, which are stored in individual parquet files in the `data/raw/` directory. The aggregation code to do the aggregation is in `notebooks/1 Processing time series data.ipynb`.
+Citi Bike stores their historical trip data in an [S3 bucket](https://s3.amazonaws.com/tripdata/index.html). The data in `data/raw/` was processed from a previous project by aggregating the daily total rides from January 2023 to June 2024, which are stored in individual parquet files in the `data/raw/` directory. The aggregation code to do the aggregation is in `notebooks/1 Processing time series data.ipynb`.
 
 ## Folder Structure
 The project uses a standard project folder structure:
@@ -37,7 +37,7 @@ I used these to setup the uv environment, project directory and project files:
 2. Installed `uv` using `pipx install uv`.
 3. Used `uv init` to automatically generate the README.md, pyproject.toml, and config other files.
 4. Switched the environment's Python version from 3.12 to 3.10.18 in the pyproject.toml and .python-version files. Ran `uv sync` to ensure that we are using Python 3.10 in the python environment.
-5. I ran `uv add numpy pandas pyarrow scikit-learn lightgbm optuna joblib` to install essential packages. I initially used other packages like polars, matplotlib, XGBoost, and Jupyter Lab for exploration. 
+5. Ran `uv add numpy pandas pyarrow scikit-learn lightgbm optuna joblib` to install essential packages. I initially used other packages like polars, matplotlib, XGBoost, and Jupyter Lab for exploration but these are not needed in `run_pipeline.py`. 
 6. Used `uv pip freeze > requirements.txt` to export the requirements.txt file.
 
 In order to run the pipeline, please use the instructions below:
@@ -53,10 +53,3 @@ To enhance code quality, I implemented pre-commit hooks to my environment. I ins
 
 
 ## Reflection
-As a data scientist who is planning on transitioning to a role in ML/AI engineering, I found this assignment very fulfilling. Since the first lecture, I have transitioned from using `poetry` to `uv`, incorporated pre-commit hooks, and I have been using VS code a lot more in my projects. However, I experienced a these inconvenient challenges while doing the project:
-
-1. I was confused whether to use `uv init` or `uv venv` when setting up the environment. I learned eventually that uv init was the better choice.
-2. I used LLMs to guide me through the uv setup. Most of them suggested `uv pip install <pkg name>` instead of `uv add <pkg name>` in installing packages. This got me confused since the pyproject.toml did not reflect the packages installed through `uv pip install <pkg name>`.
-3. The pre-commit hooks I implemented were quite strict so I had to manually allow which standards can be violated such as capitalized function parameters (I use common ML coding patterns like `X_train` very frequently).
-
-Admittedly, I have zero experience in software engineering. Some of my models at work are stuck in Jupyter notebooks and they lack a simple .py script to operationalize the entire data pipeline. This simple exercise gave me motivation to put them in a pipeline script. I look forward to eventually incorporating new features like scheduling, docker containerization, Flask, and model monitoring to this project in the future!
