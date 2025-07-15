@@ -2,12 +2,12 @@
 ## Project Overview
 [Citi Bike](https://citibikenyc.com/homepage) is a bike-sharing program in New York City, providing both classic pedal bikes and e-bikes for convenient, affordable, and fun transportation around the city. You can rent a bike using the Citi Bike app or the Lyft ride-hailing app. A rider can pick up a bike at one station and return it to any other station.
 
-The [Citi Bike NYC System Dataset](https://citibikenyc.com/system-data) contains detailed trip records from the Citi Bike bicycle-sharing system in New York City. Each data point includes data such as a unique trip identifier, trip duration, start and end times, station locations, the bike used, membership type, and many other fields. The dataset can be used for analyzing commuting patterns, bike usage, and urban mobility in New York City. 
+The [Citi Bike NYC System Dataset](https://citibikenyc.com/system-data) contains trip records from the Citi Bike bicycle-sharing system in New York City. Each data point includes a unique trip identifier, trip duration, start and end times, station locations, the bike used, membership type, and many other fields. The dataset can be used for analyzing commuting patterns, bike usage, and urban mobility in New York City. 
 
-I originally used this dataset late last year to learn new techniques in time series forecasting using gradient boosting models, while also studying MLOps best practices on the side. It is a good dataset for studying since it is a real-world dataset and Citi Bike regularly uploads new data on a monthly basis, so there is an opportunity to incorporate data drift methods and deploy it in the cloud. 
+I originally used this dataset late last year to learn new techniques in time series forecasting using gradient boosting models, while also studying MLOps best practices on the side. It is a good dataset for learning since it is a real-world dataset and Citi Bike regularly uploads new data on a monthly basis, so there is an opportunity to incorporate data drift methods and deploy it in the cloud. 
 
 ## How to Get the Data
-Citi Bike stores their historical trip data in an [S3 bucket](https://s3.amazonaws.com/tripdata/index.html). The data in `data/raw/` was processed from a previous project by aggregating the daily total rides from January 2023 to June 2024, which are stored in individual parquet files in the `data/raw/` directory. The aggregation code to do the aggregation is in `notebooks/1 Processing time series data.ipynb`.
+Citi Bike stores their historical trip data in an [S3 bucket](https://s3.amazonaws.com/tripdata/index.html). The data in `data/raw/` was previously processed from a past project of mine by aggregating the daily total rides from January 2023 to June 2024, which are stored in individual parquet files in the `data/raw/` directory. The aggregation code to do the aggregation is in `notebooks/1 Processing time series data.ipynb`.
 
 ## Folder Structure
 The project uses a standard project folder structure:
@@ -46,7 +46,7 @@ In order to run the pipeline, please use the instructions below:
 3. Finally, to run the data pipeline, first go to the src folder using `cd src` and then run the pipeline using `uv run ./run_pipeline.py`.
 
 ## Pre-Commit Configuration
-To enhance code quality, I implemented pre-commit hooks to my environment. I installed it using `uv pip install pre-commit`, created a `.pre-commit-config.yaml` file, and ran `pre-commit install` to implement my pre-commit hooks. I used these two pre-commit hooks:
+To enhance code quality, I implemented pre-commit hooks to my environment. I used `uv pip install pre-commit` to install the pre-commit package, created a `.pre-commit-config.yaml` file, and ran `pre-commit install` to implement my pre-commit hooks. I used these two pre-commit hooks:
 * **Ruff** - I used Ruff to automatically check for PEP8 violations, remove unused imports, flagging undefined variables, automatically sort import statements, and enforcing PEP8 naming standards. I specifically prevented Ruff from enforcing certain naming rules in function parameter names to accomodate for common machine learning naming conventions (e.g., `X_train`, `X_test`).
 
 * **uv.lock** - Whenever the pyproject.toml file has changes, this pre-commit hook automatically synchronizes the dependencies in the uv.lock file. 

@@ -1,8 +1,37 @@
+import holidays
 import pandas as pd
 from sklearn.preprocessing import SplineTransformer
 
 
-def feature_eng(df: pd.DataFrame, export_dataset: bool = True) -> pd.DataFrame:
+def get_nyc_holidays(yr_min: int = 2023, yr_max: int = 2026):
+    """
+    Automatically get the list of holidays in New York State.
+
+    Parameters:
+    ----------
+    yr_min : int
+        Starting year for scanning holidays.
+
+    yr_min : int
+        End year for scanning holidays (exclusive).
+
+    Returns:
+    -------
+    list
+        A list of dates in string format (YYYY-MM-DD).
+    """
+
+    nyc_holidays = holidays.US(state="NY", years=range(yr_min, yr_max))
+
+    # Convert to list of date strings in YYYY-MM-DD format
+    nyc_holidays = [date.strftime("%Y-%m-%d") for date in nyc_holidays.keys()]
+
+    return sorted(nyc_holidays)
+
+
+def feature_eng(
+    df: pd.DataFrame, nyc_holidays: list[str], export_dataset: bool = True
+) -> pd.DataFrame:
     """
     Applies feature engineering on the time series dataframe.
 
@@ -15,11 +44,14 @@ def feature_eng(df: pd.DataFrame, export_dataset: bool = True) -> pd.DataFrame:
     5. Spline transformations on the day of month feature
     6. Creation of the target variable column
 
-        Parameters:
+    Parameters:
     ----------
     df : pd.DataFrame
         A pandas DataFrame containing the 'ride_date' (datetime) and
         'total_rides' (integer) columns.
+
+    nyc_holidays : list of str
+        List of holidays in New York City.
 
     Returns:
     -------
@@ -49,51 +81,6 @@ def feature_eng(df: pd.DataFrame, export_dataset: bool = True) -> pd.DataFrame:
     # Create rolling mean features including the current value
     for window in ma_windows:
         df[f"ma_{window}d"] = df["total_rides"].rolling(window=window).mean()
-
-    # Holidays
-    nyc_holidays = [
-        "2023-01-01",  # New Year's Day
-        "2023-01-02",  # New Year's Day (Observed)
-        "2023-01-16",  # Martin Luther King Jr. Day
-        "2023-02-12",  # Lincoln's Birthday
-        "2023-02-20",  # Presidents' Day (Washington’s Birthday)
-        "2023-05-29",  # Memorial Day
-        "2023-06-19",  # Juneteenth
-        "2023-07-04",  # Independence Day
-        "2023-09-04",  # Labor Day
-        "2023-10-09",  # Columbus Day
-        "2023-11-07",  # Election Day
-        "2023-11-10",  # Veterans Day (Observed)
-        "2023-11-11",  # Veterans Day
-        "2023-11-23",  # Thanksgiving
-        "2023-12-25",  # Christmas Day
-        "2024-01-01",  # New Year's Day
-        "2024-01-15",  # Martin Luther King Jr. Day
-        "2024-02-12",  # Lincoln's Birthday
-        "2024-02-19",  # Presidents' Day
-        "2024-05-27",  # Memorial Day
-        "2024-06-19",  # Juneteenth
-        "2024-07-04",  # Independence Day
-        "2024-09-02",  # Labor Day
-        "2024-10-14",  # Columbus Day
-        "2024-11-05",  # Election Day
-        "2024-11-11",  # Veterans Day
-        "2024-11-28",  # Thanksgiving
-        "2024-12-25",  # Christmas Day
-        "2025-01-01",  # New Year's Day
-        "2025-01-20",  # Martin Luther King Jr. Day
-        "2025-02-12",  # Lincoln's Birthday
-        "2025-02-17",  # Presidents' Day
-        "2025-05-26",  # Memorial Day
-        "2025-06-19",  # Juneteenth
-        "2025-07-04",  # Independence Day
-        "2025-09-01",  # Labor Day
-        "2025-10-13",  # Columbus Day
-        "2025-11-04",  # Election Day
-        "2025-11-11",  # Veterans Day
-        "2025-11-27",  # Thanksgiving
-        "2025-12-25",  # Christmas Day
-    ]
 
     # Convert holiday_dates to datetime
     holiday_dates = pd.to_datetime(nyc_holidays)

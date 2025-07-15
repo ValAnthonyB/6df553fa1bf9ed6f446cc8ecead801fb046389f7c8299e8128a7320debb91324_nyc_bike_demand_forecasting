@@ -8,7 +8,7 @@ from data_preprocessing import (
     split_train_test_data,
 )
 from evaluate_model import calculate_metrics, save_metrics
-from feature_engineering import export_feature_eng_data, feature_eng
+from feature_engineering import export_feature_eng_data, feature_eng, get_nyc_holidays
 from training import export_model, get_best_lightgbm_model
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -20,7 +20,10 @@ def main():
 
     # Feature engineering step
     print("Engineering new features\n")
-    df = feature_eng(df)
+
+    # Get holidays in New York State from 2023 to 2025
+    nyc_holidays = get_nyc_holidays()
+    df = feature_eng(df, nyc_holidays)
     print(f"Feature engineered dataset: {df.shape}\n")
 
     # Export the feature-engineered data
