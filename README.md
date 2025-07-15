@@ -34,8 +34,8 @@ The project uses a standard project folder structure:
 ## Setup Instructions
 I used these to setup the uv environment, project directory and project files:
 1. Installed Python from the [Python website](https://www.python.org/) in my Windows 11 machine.
-2. Installed `uv` using `pipx install uv`.
-3. Used `uv init` to automatically generate the README.md, pyproject.toml, and config other files.
+2. Installed `uv` with `pipx install uv`.
+3. Used `uv init` to automatically generate the README.md, pyproject.toml, and configuration other files.
 4. Switched the environment's Python version from 3.12 to 3.10.18 in the pyproject.toml and .python-version files. Ran `uv sync` to ensure that we are using Python 3.10 in the python environment.
 5. Ran `uv add numpy pandas pyarrow scikit-learn lightgbm optuna joblib` to install essential packages. I initially used other packages like polars, matplotlib, XGBoost, and Jupyter Lab for exploration but these are not needed in `run_pipeline.py`. 
 6. Used `uv pip freeze > requirements.txt` to export the requirements.txt file.
@@ -46,7 +46,7 @@ In order to run the pipeline, please use the instructions below:
 3. Finally, to run the data pipeline, first go to the src folder using `cd src` and then run the pipeline using `uv run ./run_pipeline.py`.
 
 ## Pre-Commit Configuration
-To enhance code quality, I implemented pre-commit hooks to my environment. I used `uv pip install pre-commit` to install the pre-commit package, created a `.pre-commit-config.yaml` file, and ran `pre-commit install` to implement my pre-commit hooks. I used these two pre-commit hooks:
+To enhance code quality, I implemented pre-commit hooks to my environment. I used `uv add pre-commit` to install the pre-commit package, created a `.pre-commit-config.yaml` file, and ran `pre-commit install` to implement my pre-commit hooks. I used these two pre-commit hooks:
 * **Ruff** - I used Ruff to automatically check for PEP8 violations, remove unused imports, flagging undefined variables, automatically sort import statements, and enforcing PEP8 naming standards. I specifically prevented Ruff from enforcing certain naming rules in function parameter names to accomodate for common machine learning naming conventions (e.g., `X_train`, `X_test`).
 
 * **uv.lock** - Whenever the pyproject.toml file has changes, this pre-commit hook automatically synchronizes the dependencies in the uv.lock file. 
