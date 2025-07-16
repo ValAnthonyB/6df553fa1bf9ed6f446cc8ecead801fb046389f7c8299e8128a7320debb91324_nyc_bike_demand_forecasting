@@ -53,7 +53,7 @@ To enhance code quality, I implemented pre-commit hooks to my environment. I use
 
 
 ## Reflection
-As a data scientist who is planning on transitioning to a role in ML/AI engineering, I found this assignment very fulfilling. Since the first lecture, I have transitioned from using `poetry` to `uv`, incorporated pre-commit hooks, and I have been using VS code a lot more in my projects. However, I experienced a these inconvenient challenges while doing the project:
+As a data scientist planning to transition into ML/AI engineering, I found this assignment very fulfilling. Since the first lecture, I switched to using `uv` over anaconda and poetry, incorporated pre-commit hooks, and I have been using VS code a lot more in my projects. However, I experienced a these inconvenient challenges during the project:
 
 1. I was confused whether to use `uv init` or `uv venv` when setting up the environment. I learned eventually that uv init was the better choice.
 2. I used LLMs to guide me through the uv setup. Most of them suggested `uv pip install <pkg name>` instead of `uv add <pkg name>` in installing packages. This got me confused since the pyproject.toml did not reflect the packages installed through `uv pip install <pkg name>`.
