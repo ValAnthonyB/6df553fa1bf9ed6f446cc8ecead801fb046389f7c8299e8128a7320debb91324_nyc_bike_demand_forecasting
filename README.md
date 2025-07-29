@@ -26,6 +26,12 @@ The project uses a standard project folder structure:
 │   └── run_pipeline.py         # Executes the entire data pipeline
 ├── models/                     # Trained model artifacts
 ├── reports/                    # Model performance results in .CSV files
+├── deploy/                     # Data files organized by processing stage
+│   ├── airflow/                # ...
+│       ├── dags/               # ...
+│       ├── logs/               # ...
+│       └── config/             # ...
+│   └── docker/                 # ...
 ├── pyproject.toml              # Project dependencies from uv environment
 ├── requirements.txt            # Project dependencies
 └── README.md                   # Project overview and how to use
@@ -33,11 +39,11 @@ The project uses a standard project folder structure:
 
 ## Setup Instructions
 I used these to setup the uv environment, project directory and project files:
-1. Installed Python from the [Python website](https://www.python.org/) in my Windows 11 machine.
+1. Installed Python from the [Python website](https://www.python.org/) on my Windows 11 machine.
 2. Installed `uv` with `pipx install uv`.
-3. Used `uv init` to automatically generate the README.md, pyproject.toml, and configuration other files.
+3. Used `uv init` to automatically generate the README.md, pyproject.toml, and other configuration files.
 4. Switched the environment's Python version from 3.12 to 3.10.18 in the pyproject.toml and .python-version files. Ran `uv sync` to ensure that we are using Python 3.10 in the python environment.
-5. Ran `uv add numpy pandas pyarrow scikit-learn lightgbm optuna joblib` to install essential packages. I initially used other packages like polars, matplotlib, XGBoost, and Jupyter Lab for exploration but these are not needed in `run_pipeline.py`. 
+5. Ran `uv add numpy pandas pyarrow scikit-learn lightgbm optuna joblib` to install essential packages. I initially used other packages like polars, matplotlib, XGBoost, and Jupyter Lab for exploration but these are not needed in `run_pipeline.py`.
 6. Used `uv pip freeze > requirements.txt` to export the requirements.txt file.
 
 In order to run the pipeline, please use the instructions below:
@@ -51,12 +57,21 @@ To enhance code quality, I implemented pre-commit hooks to my environment. I use
 
 * **uv.lock** - Whenever the pyproject.toml file has changes, this pre-commit hook automatically synchronizes the dependencies in the uv.lock file. 
 
+# Containerization
+1. Installed Docker desktop from the official website. Docker version 28.3.2, build 578ccf6
+2. I opened Docker desktop then created the `Dockerfile` at the root directory. 
+3. I built the Docker image using
+```Bash
+docker build -t 6df553fa1bf9ed6f446cc8ecead801fb046389f7c8299e8128a7320debb91324-ml-pipeline .
+```
+4. Lastly, I ran the containerized pipeline in Git Bash using 
+```Bash
+docker run --rm \
+  -v "/$(pwd)/data:/app/data" \
+  -v "/$(pwd)/models:/app/models" \
+  -v "/$(pwd)/reports:/app/reports" \
+6df553fa1bf9ed6f446cc8ecead801fb046389f7c8299e8128a7320debb91324-ml-pipeline
+```
 
-## Reflection
-As a data scientist planning to transition into ML/AI engineering, I found this assignment very fulfilling. Since the first lecture, I switched to using `uv` over anaconda and poetry, incorporated pre-commit hooks, and I have been using VS code a lot more in my projects. However, I experienced a these inconvenient challenges during the project:
-
-1. I was confused whether to use `uv init` or `uv venv` when setting up the environment. I learned eventually that uv init was the better choice.
-2. I used LLMs to guide me through the uv setup. Most of them suggested `uv pip install <pkg name>` instead of `uv add <pkg name>` in installing packages. This got me confused since the pyproject.toml did not reflect the packages installed through `uv pip install <pkg name>`.
-3. The pre-commit hooks I implemented were quite strict so I had to manually allow which standards can be violated such as capitalized function parameters (I use common ML coding patterns like `X_train` very frequently).
-
-Admittedly, I have zero experience in software engineering. Some of my models at work are stuck in Jupyter notebooks and they lack a simple .py script to operationalize the entire data pipeline. This simple exercise gave me motivation to put them in a pipeline script. I look forward to eventually incorporating new features like scheduling, docker containerization, Flask, and model monitoring to this project in the future!
+# Airflow DAGs for Containerization
+1. Used docker-compose.yml to install Airflow with the most basic functionalities.
