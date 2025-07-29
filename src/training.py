@@ -2,83 +2,61 @@ import joblib
 import numpy as np
 import optuna
 import pandas as pd
-from lightgbm import LGBMRegressor, early_stopping
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 
-def get_best_lightgbm_model(
+def get_best_rf_model(
     X_train: pd.DataFrame,
     X_test: pd.DataFrame,
     y_train: pd.Series,
     y_test: pd.Series,
     n_trials: int = 20,
-) -> LGBMRegressor:
+) -> RandomForestRegressor:
     """
     Performs hyperparameter tuning using Optuna to automatically find the best
-    LightGBM regression model.
-
+    Random Forest regression model.
     The model is trained and evaluated using the RMSE (Root Mean Squared Error) metric.
 
     Parameters:
     ----------
     X_train : pd.DataFrame
         Training features.
-
     X_test : pd.DataFrame
         Testing features.
-
     y_train : pd.Series
         Training labels.
-
     y_test : pd.Series
         Testing labels.
-
     n_trials : int, optional (default=20)
         Number of Optuna trials for hyperparameter search.
 
     Returns:
     -------
-    LGBMRegressor
-        Trained LightGBM model.
+    RandomForestRegressor
+        Trained Random Forest model.
     """
 
     def objective(trial):
-        # Parameter space
+        # Parameter space for Random Forest
         params = {
-            "objective": "regression",
-            "metric": "rmse",
-            "boosting_type": "gbdt",
-            "n_estimators": 200,
-            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
-            "num_leaves": trial.suggest_int(
-                "num_leaves", 4, 128
-            ),  # LGBM can be much deeper
-            # Regularization
-            "lambda_l1": trial.suggest_float("lambda_l1", 0.1, 10.0),
-            "lambda_l2": trial.suggest_float("lambda_l2", 0.1, 10.0),
-            # Optional: Light regularization on splits
-            "min_child_samples": trial.suggest_int("min_child_samples", 10, 100),
+            "n_estimators": trial.suggest_int("n_estimators", 300, 400),
+            "max_depth": trial.suggest_int("max_depth", 3, 15),
+            "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
+            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 10),
             "random_state": 42,
-            "n_jobs": -1,
-            "verbosity": -1,
-            "force_col_wise": True,
         }
 
-        # Train the LightGBM model
-        model = LGBMRegressor(**params)
-        model.fit(
-            X_train,
-            y_train,
-            eval_set=[(X_test, y_test)],
-            eval_metric="rmse",
-            callbacks=[early_stopping(100, verbose=False)],
-        )
+        # Train the Random Forest model
+        model = RandomForestRegressor(**params)
+        model.fit(X_train, y_train)
 
-        # Get metrics
+        # Get predictions and calculate RMSE
         y_pred = model.predict(X_test)
         rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+
         return rmse
 
     # Run hyperparameter optimization
@@ -90,29 +68,22 @@ def get_best_lightgbm_model(
 
     # Train final model with best params
     best_params = study.best_params
-    best_lgbm_model = LGBMRegressor(
-        **best_params,
-        n_estimators=200,
-        random_state=42,
-        verbosity=-1,  # Suppress model messages
-    )
-    best_lgbm_model.fit(X_train, y_train)
+    best_rf_model = RandomForestRegressor(**best_params, random_state=42, n_jobs=-1)
+    best_rf_model.fit(X_train, y_train)
 
-    return best_lgbm_model
+    return best_rf_model
 
 
-def export_model(model: LGBMRegressor, path: str) -> None:
+def export_model(model: RandomForestRegressor, path: str) -> None:
     """
     After training, the model is saved to disk in a joblib file.
 
     Parameters:
     ----------
-    model : LGBMRegressor
+    model : RandomForestRegressor
         The trained model.
-
     path : str
         Destination path for saving the model artifact.
     """
-
     # Export the model using joblib
     joblib.dump(model, path)

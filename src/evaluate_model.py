@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import pandas as pd
-from lightgbm import LGBMRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import (
     mean_absolute_error,
     mean_absolute_percentage_error,
@@ -11,7 +11,7 @@ from sklearn.metrics import (
 
 
 def calculate_metrics(
-    model: LGBMRegressor,
+    model: RandomForestRegressor,
     X_train: pd.DataFrame,
     y_train: pd.Series,
     X_test: pd.DataFrame,

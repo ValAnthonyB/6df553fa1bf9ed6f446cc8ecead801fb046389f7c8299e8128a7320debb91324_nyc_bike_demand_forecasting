@@ -75,3 +75,8 @@ docker run --rm \
 
 # Airflow DAGs for Containerization
 1. Used docker-compose.yml to install Airflow with the most basic functionalities.
+2. Had trouble with mounting data/, /models, reports/, and src/ directories to Airflow's docker container.
+3. Had to install libraries using requirements.txt.
+4. Had to setup the credentials manually
+5. Docker compose is limited so cannot use parallelization in training RF.
+6. Installation difficulty with lightgbm due to OS-specific dependencies had to switch to lightgbm.

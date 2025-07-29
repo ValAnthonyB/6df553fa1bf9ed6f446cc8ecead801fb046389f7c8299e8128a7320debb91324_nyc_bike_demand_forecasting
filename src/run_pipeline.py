@@ -1,5 +1,3 @@
-from datetime import date
-
 import optuna
 
 from data_preprocessing import (
@@ -9,7 +7,7 @@ from data_preprocessing import (
 )
 from evaluate_model import calculate_metrics, save_metrics
 from feature_engineering import export_feature_eng_data, feature_eng, get_nyc_holidays
-from training import export_model, get_best_lightgbm_model
+from training import export_model, get_best_rf_model
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -37,12 +35,9 @@ def main():
     X_train, X_test, y_train, y_test = get_features_labels(train_df, test_df)
 
     # Model training with optuna
-    print("Model training using LightGBM with hyperparameter tuning Optuna.\n")
-    today_str = date.today().strftime(
-        "%Y-%m-%d"
-    )  # Get today's date in YYYY-MM-DD format
-    model_name = f"LightGBM_{today_str}"
-    model = get_best_lightgbm_model(X_train, X_test, y_train, y_test, n_trials=50)
+    print("Model training using RF with hyperparameter tuning Optuna.\n")
+    model_name = "RF_model"
+    model = get_best_rf_model(X_train, X_test, y_train, y_test, n_trials=50)
 
     # Export the model as a joblib file
     print("Exporting model\n")
