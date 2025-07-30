@@ -27,11 +27,11 @@ The project uses a standard project folder structure:
 ├── models/                     # Trained model artifacts
 ├── reports/                    # Model performance results in .CSV files
 ├── deploy/                     # Data files organized by processing stage
-│   ├── airflow/                # ...
-│       ├── dags/               # ...
-│       ├── logs/               # ...
-│       └── config/             # ...
-│   └── docker/                 # ...
+│   ├── airflow/                # Directory for storing airflow-related objects
+│       ├── dags/               # Airflow dags
+│       ├── logs/               # Stores logs of dag runs
+│       └── config/             # Configuration files.
+│   └── docker/                 # Files related to docker
 ├── pyproject.toml              # Project dependencies from uv environment
 ├── requirements.txt            # Project dependencies
 └── README.md                   # Project overview and how to use
@@ -50,6 +50,9 @@ In order to run the pipeline, please use the instructions below:
 1. Clone or fork the repository.
 2. Use `uv sync` to automatically install the dependencies from the pyproject.toml file.
 3. Finally, to run the data pipeline, first go to the src folder using `cd src` and then run the pipeline using `uv run ./run_pipeline.py`.
+
+
+ride_date	total_rides
 
 ## Pre-Commit Configuration
 To enhance code quality, I implemented pre-commit hooks to my environment. I used `uv add pre-commit` to install the pre-commit package, created a `.pre-commit-config.yaml` file, and ran `pre-commit install` to implement my pre-commit hooks. I used these two pre-commit hooks:
@@ -79,4 +82,7 @@ docker run --rm \
 3. Had to install libraries using requirements.txt.
 4. Had to setup the credentials manually
 5. Docker compose is limited so cannot use parallelization in training RF.
-6. Installation difficulty with lightgbm due to OS-specific dependencies had to switch to lightgbm.
+6. Installation difficulty with lightgbm due to OS-specific dependencies had to switch to Random Forest.
+
+# PyTests
+Testing: pytest tests/test_process_raw_data.py -v

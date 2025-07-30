@@ -9,12 +9,16 @@ from airflow.operators.python import PythonOperator
 sys.path.insert(0, "/opt/airflow")
 
 
-def process_raw_data(**kwargs):
-    """Reads the raw datasets and concatenates them into a single file."""
+def process_raw_data(raw_data_dir="data/raw/", output_dir="data/temp/", **kwargs):
     from src.data_preprocessing import process_dataset
 
-    df = process_dataset(raw_data_dir="data/raw/")
-    df.to_parquet("data/temp/concatenated.parquet", compression="gzip")
+    # Take all parquet files in the raw folder
+    df = process_dataset(raw_data_dir=raw_data_dir)
+
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    # Export concatenated parquet file
+    df.to_parquet(Path(output_dir) / "concatenated.parquet", compression="gzip")
 
 
 def feature_engineering(**kwargs):
@@ -128,7 +132,7 @@ dag = DAG(
 process_raw_data_task = PythonOperator(
     task_id="process_raw_data",
     python_callable=process_raw_data,
-    provide_context=True,
+    op_kwargs={"raw_data_dir": "data/raw/", "output_dir": "data/temp/"},
     dag=dag,
 )
 

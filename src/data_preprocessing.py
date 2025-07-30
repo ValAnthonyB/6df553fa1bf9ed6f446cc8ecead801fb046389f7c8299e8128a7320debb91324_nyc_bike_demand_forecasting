@@ -1,4 +1,3 @@
-from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -8,29 +7,27 @@ def process_dataset(raw_data_dir: str) -> pd.DataFrame:
     """
     Loads Parquet files from the raw data folder, aggregates daily ride counts,
     filters dates from 2023 onwards, and ensures the date column is in datetime format.
-
     Parameters:
         raw_data_dir (str): Path to the raw data containing many parquet files.
-
     Returns:
         pd.DataFrame: DataFrame with 'ride_date' and 'total_rides' columns.
     """
-
     # Combine daily time series data from all raw parquet files
     data_path = Path(raw_data_dir)
+    df = pd.read_parquet(data_path, engine="pyarrow")
+    df["ride_date"] = pd.to_datetime(df["ride_date"])
     df = (
-        pd.read_parquet(data_path, engine="pyarrow")
-        .groupby("ride_date")
+        df.groupby("ride_date")
         .agg(total_rides=("unique_rides", "sum"))
         .reset_index()
-        .pipe(lambda x: x[x["ride_date"] >= date(2023, 1, 1)])
+        .pipe(
+            lambda x: x[x["ride_date"] >= pd.Timestamp("2023-01-01")]
+        )  # Changed this line
         .sort_values("ride_date")
         .reset_index(drop=True)
     )
-
     # Enforce ride_date to be datetime variable
     df["ride_date"] = pd.to_datetime(df["ride_date"])
-
     return df
 
 
