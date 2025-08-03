@@ -47,22 +47,39 @@ To run the pipeline, please follow these steps:
 
 
 ## Docker Integration
-The Python 3.10.10-slim environment was used for memory efficiency. This run command 
+* The Python 3.10.10-slim environment was used for memory efficiency. 
+
+* This run command 
 ```Bash
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 ```
-to install necessary extensions and tools for the pipeline to run. The `WORKDIR /app` command sets up the container's working directory. To install the project's dependencies, I used 
+to install necessary extensions and tools for the pipeline to run. 
+
+* The `WORKDIR /app` command sets up the container's working directory. 
+
+* To install the project's dependencies, I used 
 ```Bash
 COPY requirements.txt .
 RUN pip install --no-cache-dir --index-url https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 ```
-where the requirements.txt contains the libraries (taken from uv with specified library versions). I manually specified Tsinghua University's PyPI mirror for faster downloads since I experienced slow downloads during testing. The `COPY src/ ./src/` was then used to copy the Python scripts in the `src/` directory to the container's `src/` directory. The `RUN mkdir /app/models /app/reports` command was used to create the `models/` and `reports/` for storing the model artifact and the model metrics and results, respectively. `VOLUME ["/app/data", "/app/models", "/app/reports"]` was used to create mount points for reading the data, exporting the Random Forest model, and the model performance results. This was done so that the files exported by the pipeline is persisted. Finally, the `CMD ["python", "src/run_pipeline.py"]` command is used to run the pipeline. I built the Docker image using:
+where the requirements.txt contains the libraries (taken from uv with specified library versions). I manually specified Tsinghua University's PyPI mirror for faster downloads since I experienced slow downloads during testing. 
+
+* The `COPY src/ ./src/` was then used to copy the Python scripts in the `src/` directory to the container's `src/` directory. 
+
+* The `RUN mkdir /app/models /app/reports` command was used to create the `models/` and `reports/` for storing the model artifact and the model metrics and results, respectively. 
+
+* `VOLUME ["/app/data", "/app/models", "/app/reports"]` was used to create mount points for reading the data, exporting the Random Forest model, and the model performance results. 
+
+* This was done so that the files exported by the pipeline is persisted. Finally, the `CMD ["python", "src/run_pipeline.py"]` command is used to run the pipeline. 
+
+* I built the Docker image using:
 ```Bash
 docker build -t 6df553fa1bf9ed6f446cc8ecead801fb046389f7c8299e8128a7320debb91324-ml-pipeline .
 ```
-To run the container I used this command:
+
+* To run the container I used this command:
 ```Bash
 docker run --rm \
   -v "/$(pwd)/data:/app/data" \
