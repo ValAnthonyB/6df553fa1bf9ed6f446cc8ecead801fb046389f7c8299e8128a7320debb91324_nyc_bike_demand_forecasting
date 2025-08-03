@@ -1,16 +1,11 @@
 # NYC Daily Bike Demand Forecasting
-## Project Overview
-[Citi Bike](https://citibikenyc.com/homepage) is a bike-sharing program in New York City, providing both classic pedal bikes and e-bikes for convenient, affordable, and fun transportation around the city. You can rent a bike using the Citi Bike app or the Lyft ride-hailing app. A rider can pick up a bike at one station and return it to any other station.
 
-The [Citi Bike NYC System Dataset](https://citibikenyc.com/system-data) contains trip records from the Citi Bike bicycle-sharing system in New York City. Each data point includes a unique trip identifier, trip duration, start and end times, station locations, the bike used, membership type, and many other fields. The dataset can be used for analyzing commuting patterns, bike usage, and urban mobility in New York City. 
+## Project Overview 
+[Citi Bike](https://citibikenyc.com/homepage) is a bike-sharing program in New York City, providing both classic pedal bikes and e-bikes for convenient, affordable, and fun transportation around the city. You can rent a bike using the Citi Bike app or the Lyft ride-hailing app. A rider can pick up a bike at one station and return it to any other station. The [Citi Bike NYC System Dataset](https://citibikenyc.com/system-data) contains trip records from the Citi Bike bicycle-sharing system in New York City. Each data point includes a unique trip identifier, trip duration, start and end times, station locations, the bike used, membership type, and many other fields. The dataset can be used for analyzing commuting patterns, bike usage, and urban mobility in New York City. The goal of this project is to train a model that predicts bike demand one week in advance. The data processing pipeline aggregates daily ride data to create a dataset containing each `ride_date` and `unique_rides` (the total number of rides for that date).
 
-I originally used this dataset late last year to learn new techniques in time series forecasting using gradient boosting models, while also studying MLOps best practices on the side. It is a good dataset for learning time series forecasting since it is a real-world dataset and Citi Bike regularly uploads new data on a monthly basis, so there is an opportunity to incorporate data drift methods and deploy it in the cloud. 
+The pipeline was dockerized to prevent dependency conflicts by packaging all necessary components into a single container. Running the image through Docker ensures the ML pipeline is fully portable across different systems. Another important component of this project is Airflow orchestration. Unlike cron scheduling which takes a lot of manual work to manage pipeline dependencies, Airflow automates relationships between pipelines through DAGs. Airflow also offers features such as automatic retries and failure alerts to ensure pipeline reliability, distributed execution through executors like Celery for scaling tasks across worker nodes, and event-based triggers that can initiate workflows when files arrive in an Amazon S3 bucket.
 
-## How to Get the Data
-Citi Bike stores their historical trip data in an [S3 bucket](https://s3.amazonaws.com/tripdata/index.html). The data in `data/raw/` was previously processed from a past project of mine by aggregating the daily total rides from January 2023 to June 2024, which are stored in individual parquet files in the `data/raw/` directory. The aggregation code to do the aggregation is in `notebooks/1 Processing time series data.ipynb`.
-
-## Folder Structure
-The project uses a standard project folder structure:
+The project uses a standard project folder structure but with added directories for Docker-related files and Airflow DAGs and logs.
 
 ```
 .
@@ -34,40 +29,40 @@ The project uses a standard project folder structure:
 │   └── docker/                 # Files related to docker
 ├── pyproject.toml              # Project dependencies from uv environment
 ├── requirements.txt            # Project dependencies
+├── Dockerfile                  # Dockerfile to run the pipeline
+├── docker-compose.yml          # Launches airflow to run DAGs
 └── README.md                   # Project overview and how to use
 ```
 
+
 ## Setup Instructions
-I used these to setup the uv environment, project directory and project files:
-1. Installed Python from the [Python website](https://www.python.org/) on my Windows 11 machine.
-2. Installed `uv` with `pipx install uv`.
-3. Used `uv init` to automatically generate the README.md, pyproject.toml, and other configuration files.
-4. Switched the environment's Python version from 3.12 to 3.10.18 in the pyproject.toml and .python-version files. Ran `uv sync` to ensure that we are using Python 3.10 in the python environment.
-5. Ran `uv add numpy pandas pyarrow scikit-learn lightgbm optuna joblib` to install essential packages. I initially used other packages like polars, matplotlib, XGBoost, and Jupyter Lab for exploration but these are not needed in `run_pipeline.py`.
-6. Used `uv pip freeze > requirements.txt` to export the requirements.txt file.
-
-In order to run the pipeline, please use the instructions below:
-1. Clone or fork the repository.
-2. Use `uv sync` to automatically install the dependencies from the pyproject.toml file.
-3. Finally, to run the data pipeline, first go to the src folder using `cd src` and then run the pipeline using `uv run ./run_pipeline.py`.
+To run the pipeline, please follow these steps:
+1. Clone the repository.
+2. CD to the directory.
+3. Make sure Docker desktop is installed and opened.
+4. Before running the pipeline, the datasets must pre prepared in the `data/raw` directory. 
+4. Use `docker-compose up -d` to setup and launch Airflow.
+5. Open `http://127.0.0.1:8080` in the browser to open the Airflow UI. Log into Airflow with the default username `admin` and the password `admin`.
+6. To run the pipeline, click the `bike_forecasting_pipeline` and click the `Trigger DAG` button.
 
 
-ride_date	total_rides
-
-## Pre-Commit Configuration
-To enhance code quality, I implemented pre-commit hooks to my environment. I used `uv add pre-commit` to install the pre-commit package, created a `.pre-commit-config.yaml` file, and ran `pre-commit install` to implement my pre-commit hooks. I used these two pre-commit hooks:
-* **Ruff** - I used Ruff to automatically check for PEP8 violations, remove unused imports, flagging undefined variables, automatically sort import statements, and enforcing PEP8 naming standards. I specifically prevented Ruff from enforcing certain naming rules in function parameter names to accomodate for common machine learning naming conventions (e.g., `X_train`, `X_test`).
-
-* **uv.lock** - Whenever the pyproject.toml file has changes, this pre-commit hook automatically synchronizes the dependencies in the uv.lock file. 
-
-# Containerization
-1. Installed Docker desktop from the official website. Docker version 28.3.2, build 578ccf6
-2. I opened Docker desktop then created the `Dockerfile` at the root directory. 
-3. I built the Docker image using
+## Docker Integration
+The Python 3.10.10-slim environment was used for memory efficiency. This run command 
+```Bash
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+```
+to install necessary extensions and tools for the pipeline to run. The `WORKDIR /app` command sets up the container's working directory. To install the project's dependencies, I used 
+```Bash
+COPY requirements.txt .
+RUN pip install --no-cache-dir --index-url https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
+```
+where the requirements.txt contains the libraries (taken from uv with specified library versions). I manually specified Tsinghua University's PyPI mirror for faster downloads since I experienced slow downloads during testing. The `COPY src/ ./src/` was then used to copy the Python scripts in the `src/` directory to the container's `src/` directory. The `RUN mkdir /app/models /app/reports` command was used to create the `models/` and `reports/` for storing the model artifact and the model metrics and results, respectively. `VOLUME ["/app/data", "/app/models", "/app/reports"]` was used to create mount points for reading the data, exporting the Random Forest model, and the model performance results. This was done so that the files exported by the pipeline is persisted. Finally, the `CMD ["python", "src/run_pipeline.py"]` command is used to run the pipeline. I built the Docker image using:
 ```Bash
 docker build -t 6df553fa1bf9ed6f446cc8ecead801fb046389f7c8299e8128a7320debb91324-ml-pipeline .
 ```
-4. Lastly, I ran the containerized pipeline in Git Bash using 
+To run the container I used this command:
 ```Bash
 docker run --rm \
   -v "/$(pwd)/data:/app/data" \
@@ -75,14 +70,20 @@ docker run --rm \
   -v "/$(pwd)/reports:/app/reports" \
 6df553fa1bf9ed6f446cc8ecead801fb046389f7c8299e8128a7320debb91324-ml-pipeline
 ```
+Ensure that Docker desktop is intalled. In my setup, I downloaded Docker desktop from the official website with version 28.3.2 and build number 578ccf6.
 
-# Airflow DAGs for Containerization
-1. Used docker-compose.yml to install Airflow with the most basic functionalities.
-2. Had trouble with mounting data/, /models, reports/, and src/ directories to Airflow's docker container.
-3. Had to install libraries using requirements.txt.
-4. Had to setup the credentials manually
-5. Docker compose is limited so cannot use parallelization in training RF.
-6. Installation difficulty with lightgbm due to OS-specific dependencies had to switch to Random Forest.
 
-# PyTests
-Testing: pytest tests/test_process_raw_data.py -v
+## Airflow DAG
+The individual components of the pipeline was separated into Tasks in Airflow. Each task in the DAG use the scripts from the `src/`. The tasks of `pipeline_dag.py` are as follows:
+1. `process_raw_data()` - Reads the raw datasets, concatenates them into a single dataframe, and exported as a parquet file in the `data/temp` directory.
+2. `feature_engineering()` - Implements the feature engineering pipeline.
+3. `date_splitting()` - Splits the feature-engineered dataset according to a date cut-off.
+4. `model_training()` - Applies hyperparameter finetuning to a Random Forest model. Model artifact is exported to the `models/` directory.
+5. `model_evaluation()` - Gets performance metrics of the trained model.
+6. `temp_cleanup()` - Removes files stored in the temp folder. 
+
+The tasks are run sequentially. No scheduling was implemented since the raw data arrives at unpredictable times in S3. Hence, we use Airflow's `S3KeySensor()` if this model is to be deployed into production.
+
+
+## Reflection
+I found this assignment extremely difficult to work on but it was worth it in the end. I became more familiar with creating Dockerfiles and docker-compose.yml. A major challenge I faced was that the original model was supposed to be a LightGBM model but due to incompatibility issues with the containerized environment of the docker-compose it was not possible despite trying multiple workarounds. Also, mounting the relevant directories proved to be a challenge since the pipeline in the Docker container and in the Airflow DAG kept failing unless I specifically mount directories needed by the workflow. All in all, this was an exciting yet difficult assignment and I am excited to incorporate GitHub actions and model monitoring in the next steps. 
