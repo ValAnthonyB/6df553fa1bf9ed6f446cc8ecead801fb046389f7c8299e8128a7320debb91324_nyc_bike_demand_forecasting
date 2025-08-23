@@ -14,6 +14,11 @@ dependencies = [
     "joblib==1.5.1",
     "pre-commit==4.2.0",
     "pytest==8.4.1",
+    "requests==2.32.5",
+    "loguru==0.7.3",
+    "mlflow==3.1.4",
+    "evidently==0.7.11",
+    "psycopg2-binary==2.9.10"
 ]
 
 [tool.ruff]
@@ -31,4 +36,9 @@ ignore = [
     "N806",  # Variable in function should be lowercase
     "N803",  # Argument name should be lowercase  
     "N815",  # Variable in class scope should not be mixedCase
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.2.0",
 ]

@@ -13,7 +13,7 @@ def get_best_rf_model(
     X_test: pd.DataFrame,
     y_train: pd.Series,
     y_test: pd.Series,
-    n_trials: int = 20,
+    n_trials: int = 25,
 ) -> RandomForestRegressor:
     """
     Performs hyperparameter tuning using Optuna to automatically find the best
@@ -42,10 +42,11 @@ def get_best_rf_model(
     def objective(trial):
         # Parameter space for Random Forest
         params = {
-            "n_estimators": trial.suggest_int("n_estimators", 300, 400),
-            "max_depth": trial.suggest_int("max_depth", 3, 15),
+            "n_estimators": 300,
+            "max_depth": trial.suggest_int("max_depth", 3, 20),
             "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
             "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 10),
+            "n_jobs": -1,
             "random_state": 42,
         }
 
@@ -68,7 +69,9 @@ def get_best_rf_model(
 
     # Train final model with best params
     best_params = study.best_params
-    best_rf_model = RandomForestRegressor(**best_params, random_state=42, n_jobs=-1)
+    best_rf_model = RandomForestRegressor(
+        **best_params, n_estimators=300, random_state=42, n_jobs=-1
+    )
     best_rf_model.fit(X_train, y_train)
 
     return best_rf_model

@@ -7,3 +7,4 @@ optuna==4.4.0
 joblib==1.5.1
 holidays==0.76
 pytest==8.4.1
+loguru==0.7.3

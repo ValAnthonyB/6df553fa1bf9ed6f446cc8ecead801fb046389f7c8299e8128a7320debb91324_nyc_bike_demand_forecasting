@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import pandas as pd
+from loguru import logger
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import (
     mean_absolute_error,
@@ -22,26 +23,15 @@ def calculate_metrics(
     Evaluates the LightGBM regression model on the training and test datasets
     using RMSE, MAE, and MAPE metrics.
 
-    Parameters:
-    ----------
-    X_train : pd.DataFrame
-        Training features.
-
-    X_test : pd.DataFrame
-        Testing features.
-
-    y_train : pd.Series
-        Training labels.
-
-    y_test : pd.Series
-        Testing labels.
-
     Returns:
     -------
     dict
         Dictionary containing RMSE, MAE, and MAPE for both the training and test sets.
     """
+    logger.info(f"Calculating metrics for {model_name}")
+
     # Make predictions
+    logger.info("Making predictions on training and test sets")
     y_pred_train = model.predict(X_train)
     y_pred_test = model.predict(X_test)
 
@@ -55,16 +45,16 @@ def calculate_metrics(
     mae_test = mean_absolute_error(y_test, y_pred_test)
     mape_test = mean_absolute_percentage_error(y_test, y_pred_test) * 100
 
-    # Print results
-    print(f"\nTrain Set Metrics ({model_name}):")
-    print(f"RMSE: {rmse_train:.2f}")
-    print(f"MAE: {mae_train:.2f}")
-    print(f"MAPE: {mape_train:.2f}%")
+    # Log results
+    logger.info(f"Train Set Metrics ({model_name}):")
+    logger.info(f"  RMSE: {rmse_train:.2f}")
+    logger.info(f"  MAE: {mae_train:.2f}")
+    logger.info(f"  MAPE: {mape_train:.2f}%")
 
-    print(f"\nTest Set Metrics ({model_name}):")
-    print(f"RMSE: {rmse_test:.2f}")
-    print(f"MAE: {mae_test:.2f}")
-    print(f"MAPE: {mape_test:.2f}%")
+    logger.info(f"Test Set Metrics ({model_name}):")
+    logger.info(f"  RMSE: {rmse_test:.2f}")
+    logger.info(f"  MAE: {mae_test:.2f}")
+    logger.info(f"  MAPE: {mape_test:.2f}%")
 
     # Return all metrics in a structured format
     return {

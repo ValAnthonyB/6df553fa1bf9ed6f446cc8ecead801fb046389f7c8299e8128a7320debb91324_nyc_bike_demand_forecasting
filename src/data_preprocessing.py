@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 
@@ -18,21 +19,25 @@ def process_dataset(raw_data_dir: str) -> pd.DataFrame:
     df["ride_date"] = pd.to_datetime(df["ride_date"])
     df = (
         df.groupby("ride_date")
-        .agg(total_rides=("unique_rides", "sum"))
+        .agg(total_rides=("total_rides", "sum"))
         .reset_index()
-        .pipe(
-            lambda x: x[x["ride_date"] >= pd.Timestamp("2023-01-01")]
-        )  # Changed this line
+        .pipe(lambda x: x[x["ride_date"] >= pd.Timestamp("2022-01-01")])
         .sort_values("ride_date")
         .reset_index(drop=True)
     )
     # Enforce ride_date to be datetime variable
     df["ride_date"] = pd.to_datetime(df["ride_date"])
-    return df
+
+    # Apply Gaussian noise to the total_rides
+    df_drifted = df.copy()
+    gaussian_noise = np.random.normal(0, 0.2 * df["total_rides"].std(), len(df_drifted))
+    df_drifted["total_rides"] = df_drifted["total_rides"] + gaussian_noise
+
+    return df, df_drifted
 
 
 def split_train_test_data(
-    df: pd.DataFrame, cutoff_dt: str
+    df: pd.DataFrame, cutoff_dt: str, is_drifted: bool = False
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     We use a cutoff date to split the training and test data using these rules:
@@ -62,6 +67,15 @@ def split_train_test_data(
     # Time-based split
     train_df = df[df["ride_date"] <= cutoff_dt].copy()
     test_df = df[(df["ride_date"] > cutoff_dt)].copy()
+
+    # Export to CSV
+    if not is_drifted:
+        train_df.to_csv("data/processed/train.csv", index=False)
+        test_df.to_csv("data/processed/test.csv", index=False)
+
+    else:
+        train_df.to_csv("data/processed/drifted_train.csv", index=False)
+        test_df.to_csv("data/processed/drifted_test.csv", index=False)
 
     return train_df, test_df
 
