@@ -63,7 +63,7 @@ To simulate model drift, the original test set was modified by adding Gaussian n
 To simulate model drift, the original test set was modified by adding Gaussian noise, creating a new dataset that represents drifted data. Since all features in the dataset are numerical, Evidently automatically compares the reference dataset against the drifted dataset and generates a comprehensive drift report. In this project, if at least one feature exhibits statistically significant drift (p-value < 0.10), the model is retrained using fresh data consisting of the original training set with the same Gaussian noise applied.
 
 ## Testing Instructions
-* To run the pipeline script, use `uv run python src/run_pipeline.py`. Ensure the  environment is activated before running this command.
+* Use `uv run python src/run_pipeline.py` to run the pipeline script. Before running this command, make sure that the environment is activated and MLflow is launched from the docker-compose file.
 
 * To run the model pipeline in Airflow, use `docker-compose exec airflow-webserver airflow dags test ml_pipeline_dag 2025-08-02` in the terminal. Docker Desktop must be running for this to work.
 
