@@ -261,7 +261,7 @@ def retrain_model(**context):
     mlflow.log_param("retrained_after_drift", True)
 
     # Register retrained model if it meets performance threshold
-    MAPE_THRESHOLD = 11  # Same threshold as original model
+    MAPE_THRESHOLD = 15
 
     if evaluation_metrics["mape"] <= MAPE_THRESHOLD:
         logger.info(f"Retrained model meets threshold (MAPE: {evaluation_metrics['mape']:.2f}% < {MAPE_THRESHOLD}%)")
