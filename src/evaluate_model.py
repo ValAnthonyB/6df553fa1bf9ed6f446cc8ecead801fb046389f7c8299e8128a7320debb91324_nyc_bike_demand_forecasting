@@ -1,17 +1,16 @@
-import os
-
 import numpy as np
 import pandas as pd
+import json
+from matplotlib import pyplot as plt
 from loguru import logger
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import (
     mean_absolute_error,
     mean_absolute_percentage_error,
-    mean_squared_error,
+    mean_squared_error
 )
 
-
-def calculate_metrics(
+def get_metrics(
     model: RandomForestRegressor,
     X_train: pd.DataFrame,
     y_train: pd.Series,
@@ -20,13 +19,13 @@ def calculate_metrics(
     model_name: str = "Model",
 ) -> dict:
     """
-    Evaluates the LightGBM regression model on the training and test datasets
-    using RMSE, MAE, and MAPE metrics.
+    Evaluates the Random Forest regression model on the training and test datasets
+    using MAE, RMSE, and MAPE metrics.
 
     Returns:
     -------
     dict
-        Dictionary containing RMSE, MAE, and MAPE for both the training and test sets.
+        Dictionary containing RMSE, MAE, MAPE, and R2 for both the training and test sets.
     """
     logger.info(f"Calculating metrics for {model_name}")
 
@@ -34,6 +33,15 @@ def calculate_metrics(
     logger.info("Making predictions on training and test sets")
     y_pred_train = model.predict(X_train)
     y_pred_test = model.predict(X_test)
+
+    # Plot the predictions
+    fig, ax = plt.subplots(figsize=(10, 6), dpi=150)
+    plt.plot(list(range(len(y_test))), y_test, color='black', label="Ground Truth")
+    plt.plot(list(range(len(y_test))), y_pred_test, ls='--', color='blue', lw=0.7, label="Predicted")
+    plt.title("Test Ground Truth vs Predicted")
+    plt.legend()
+    plt.savefig("reports/forecast.png", dpi=150, bbox_inches="tight")
+    plt.close()
 
     # Train metrics
     rmse_train = np.sqrt(mean_squared_error(y_train, y_pred_train))
@@ -45,47 +53,26 @@ def calculate_metrics(
     mae_test = mean_absolute_error(y_test, y_pred_test)
     mape_test = mean_absolute_percentage_error(y_test, y_pred_test) * 100
 
-    # Log results
+    # Print the results
     logger.info(f"Train Set Metrics ({model_name}):")
-    logger.info(f"  RMSE: {rmse_train:.2f}")
-    logger.info(f"  MAE: {mae_train:.2f}")
-    logger.info(f"  MAPE: {mape_train:.2f}%")
+    logger.info(f"RMSE: {rmse_train:.2f}")
+    logger.info(f"MAE: {mae_train:.2f}")
+    logger.info(f"MAPE: {mape_train:.2f}%")
 
     logger.info(f"Test Set Metrics ({model_name}):")
-    logger.info(f"  RMSE: {rmse_test:.2f}")
-    logger.info(f"  MAE: {mae_test:.2f}")
-    logger.info(f"  MAPE: {mape_test:.2f}%")
+    logger.info(f"RMSE: {rmse_test:.2f}")
+    logger.info(f"MAE: {mae_test:.2f}")
+    logger.info(f"MAPE: {mape_test:.2f}%")
 
-    # Return all metrics in a structured format
-    return {
-        "train": {"rmse": rmse_train, "mae": mae_train, "mape": mape_train},
-        "test": {"rmse": rmse_test, "mae": mae_test, "mape": mape_test},
+    # Put the test metrics in a dict
+    metrics_dict = {
+        "rmse": rmse_test, 
+        "mae": mae_test, 
+        "mape": mape_test,
     }
 
+    # Export evaluation report
+    with open("reports/evaluation_results.json", "w") as f:
+        json.dump(metrics_dict, f, indent=4)
 
-def save_metrics(metrics: dict, model_name: str) -> None:
-    """
-    Exports the model metrics on the train test sets locally.
-
-    Parameters:
-    ----------
-    metrics : dict
-        Dictionary containing the RMSE, MAE, and MAPE scores on the train
-        and test sets.
-
-    model_name : str
-        Name of the model.
-    """
-    save_path = f"reports/{model_name}.csv"
-
-    # Convert to DataFrame
-    metrics_df = pd.DataFrame.from_dict(metrics, orient="index").reset_index()
-
-    # Rename columns
-    metrics_df.columns = ["Dataset", "RMSE", "MAE", "MAPE"]
-
-    # Create directory if it doesn't exist
-    os.makedirs("reports", exist_ok=True)
-
-    # Save as CSV (append if file exists, otherwise write header)
-    metrics_df.to_csv(save_path, index=False)
+    return metrics_dict

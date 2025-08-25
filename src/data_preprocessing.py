@@ -7,7 +7,7 @@ import pandas as pd
 def process_dataset(raw_data_dir: str) -> pd.DataFrame:
     """
     Loads Parquet files from the raw data folder, aggregates daily ride counts,
-    filters dates from 2023 onwards, and ensures the date column is in datetime format.
+    filters dates from 2022 onwards, and ensures the date column is in datetime format.
     Parameters:
         raw_data_dir (str): Path to the raw data containing many parquet files.
     Returns:
@@ -30,7 +30,7 @@ def process_dataset(raw_data_dir: str) -> pd.DataFrame:
 
     # Apply Gaussian noise to the total_rides
     df_drifted = df.copy()
-    gaussian_noise = np.random.normal(0, 0.2 * df["total_rides"].std(), len(df_drifted))
+    gaussian_noise = np.random.normal(0, 0.5 * df["total_rides"].std(), len(df_drifted))
     df_drifted["total_rides"] = df_drifted["total_rides"] + gaussian_noise
 
     return df, df_drifted
@@ -47,7 +47,7 @@ def split_train_test_data(
     Parameters:
     ----------
     df : pd.DataFrame
-        DataFrame containing the feature-engineered features and labels.
+        Feature-engineered features and labels.
 
     cutoff_dt : str or pd.Timestamp
         Date used to split the data.
@@ -60,6 +60,7 @@ def split_train_test_data(
     """
 
     df = df.copy()
+    df["ride_date"] = pd.to_datetime(df["ride_date"])
 
     # Convert date string to pandas timestamp
     cutoff_dt = pd.Timestamp(cutoff_dt)

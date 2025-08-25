@@ -1,5 +1,5 @@
 import sys
-
+import mlflow
 import optuna
 from loguru import logger
 
@@ -8,98 +8,109 @@ from data_preprocessing import (
     process_dataset,
     split_train_test_data,
 )
-from evaluate_model import calculate_metrics, save_metrics
-from feature_engineering import export_feature_eng_data, feature_eng, get_nyc_holidays
-from training import export_model, get_best_rf_model
 
-# Add file logging with timestamp
+from feature_engineering import feature_eng, get_nyc_holidays
+from training import model_training
+from evaluate_model import get_metrics
+from drift_detection import detect_drift
+
+# Add file logging
+logger.remove()
 logger.add("logs/ml_pipeline_{time}.log")
 logger.add(sys.stdout, colorize=True, enqueue=True, backtrace=True, diagnose=True)
 
-# Suppress optuna logging
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 
 def main():
     logger.info("Starting ML pipeline execution")
 
+    # Set up MLflow experiment
+    mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow.set_experiment("NYC Citi Bike Demand Forecasting")
+
+    # Data processing
     logger.info("Reading and processing the dataset")
     df, df_drifted = process_dataset(raw_data_dir="data/raw/")
     logger.success("Dataset processing completed")
 
-    # Feature engineering step
+    # Feature engineering
     logger.info("Engineering new features")
-    # Get holidays in New York State from 2023 to 2025
     nyc_holidays = get_nyc_holidays()
-    df = feature_eng(df, nyc_holidays)
-    df_drifted = feature_eng(df_drifted, nyc_holidays)
+    df, feature_names = feature_eng(df, nyc_holidays)
+    df_drifted, _ = feature_eng(df_drifted, nyc_holidays)
     logger.info(f"Feature engineered dataset shape: {df.shape}")
 
-    # Export the feature-engineered data
-    logger.info("Exporting feature-engineered data")
-    export_feature_eng_data(df, "data/processed/")
-    logger.success("Feature-engineered data exported successfully")
-
-    # Train test split. Use last month as the test set.
+    # Train test split
     logger.info("Splitting data into train and test sets")
     train_df, test_df = split_train_test_data(df, "2025-07-01")
     train_df_drifted, test_df_drifted = split_train_test_data(
         df_drifted, "2025-07-01", is_drifted=True
     )
-    logger.info(f"Train dataset shape: {train_df.shape}")
-    logger.info(f"Test dataset shape: {test_df.shape}")
 
-    # Get the features and target variable
-    logger.info("Extracting features and labels")
+    # Get features and labels
     X_train, X_test, y_train, y_test = get_features_labels(train_df, test_df)
-    X_train_drifted, X_test_drifted, y_train_drifted, y_test_drifted = (
-        get_features_labels(train_df_drifted, test_df_drifted)
-    )
     logger.success("Features and labels extracted successfully")
 
-    # Model training with optuna
-    logger.info("Starting RF model training with hyperparameter tuning (Optuna)")
-    model_name = "RF_model"
-    model = get_best_rf_model(X_train, X_test, y_train, y_test, n_trials=3)
+    # Model training (keeps run active)
+    logger.info("Starting RF model training")
+    model, run_id = model_training(
+        X_train, X_test, y_train, y_test, feature_names, n_trials=20
+    )
     logger.success("Model training completed successfully")
 
-    # Export the model as a joblib file
-    model_path = f"models/{model_name}.joblib"
-    logger.info("Exporting trained model")
-    export_model(model, model_path)
-    logger.success(f"Model exported to {model_path}")
-
-    # Evaluate the model
+    # Model evaluation (continue with the active run from training)
     logger.info("Evaluating model performance")
-    metrics_df = calculate_metrics(
-        model, X_train, y_train, X_test, y_test, model_name=model_name
-    )
-    logger.success("Model evaluation completed")
+    
+    # The run is still active from training, so we don't need to start a new one
+    # Just continue logging to the active run
+    evaluation_metrics = get_metrics(model, X_train, y_train, X_test, y_test)
+    mlflow.log_metric("MAPE", evaluation_metrics["mape"])
+    mlflow.log_metric("MAE", evaluation_metrics["mae"])
+    
+    # Model registration (within the same active run)
+    logger.info("Checking model performance for registration eligibility")
+    MAPE_THRESHOLD = 11  # MAPE threshold in percentage
+    
+    if evaluation_metrics["mape"] <= MAPE_THRESHOLD:
+        logger.info(f"Model meets threshold (MAPE: {evaluation_metrics['mape']:.2f}% < {MAPE_THRESHOLD}%)")
+        
+        # Register the model
+        registered_model = mlflow.register_model(
+            model_uri=f"runs:/{run_id}/model",
+            name="BikeRideDemand_RandomForest"
+        )
+        
+        logger.info(f"Model registered successfully!")
+        logger.info(f"Model Name: {registered_model.name}")
+        logger.info(f"Model Version: {registered_model.version}")
+        
+    else:
+        logger.warning(f"Model does not meet threshold (MAPE: {evaluation_metrics['mape']:.2f}% >= {MAPE_THRESHOLD}%)")
 
-    # Evaluate the model on the drifted test set
-    metrics_df = calculate_metrics(
-        model, X_train, y_train, X_test, y_test, model_name=model_name
-    )
+    # Run drift detection and log to the same active run
+    logger.info("Running drift detection")
+    test_drift_results = detect_drift('data/processed/test.csv', 
+                                      'data/processed/drifted_test.csv', 
+                                      threshold=0.1)
+    
+    top_5_drifted = sorted(test_drift_results["feature_drifts"].items(), key=lambda x: x[1])[:5]
+    logger.info("Top 5 most drifted features:")
+    [logger.info(f"{f}: p={p:.4f}") for f, p in top_5_drifted]
 
-    # Evaluate on the drifted data
-    logger.info("Evaluating model performance on the drifted dataset.")
-    metrics_df_drifted = calculate_metrics(
-        model,
-        X_train_drifted,
-        y_train_drifted,
-        X_test_drifted,
-        y_test_drifted,
-        model_name=model_name,
-    )
+    # Log drift status to the same active run
+    mlflow.log_param("test_drift_detected", test_drift_results["drift_detected"])
+    mlflow.log_metric("test_overall_drift_score", test_drift_results["overall_drift_score"])
 
-    # Save model metrics
-    logger.info("Saving model metrics")
-    save_metrics(metrics_df, model_name=model_name)
-    save_metrics(metrics_df_drifted, model_name="RF_drifted")
-    logger.success("Model metrics saved successfully")
+    # End the run after all logging is complete
+    mlflow.end_run()
+    logger.success("Model evaluation successful")
+
+    # Raise error if drift detected (after the run is complete)
+    if test_drift_results["drift_detected"]:
+        raise ValueError("Data drift detected in test set! Model retraining required.")
 
     logger.success("ML pipeline execution completed successfully!")
-
 
 if __name__ == "__main__":
     try:

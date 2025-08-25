@@ -3,22 +3,9 @@ import pandas as pd
 from sklearn.preprocessing import SplineTransformer
 
 
-def get_nyc_holidays(yr_min: int = 2023, yr_max: int = 2026):
+def get_nyc_holidays(yr_min: int = 2020, yr_max: int = 2030) -> list:
     """
-    Automatically get the list of holidays in New York State.
-
-    Parameters:
-    ----------
-    yr_min : int
-        Starting year for scanning holidays.
-
-    yr_min : int
-        End year for scanning holidays (exclusive).
-
-    Returns:
-    -------
-    list
-        A list of dates in string format (YYYY-MM-DD).
+    Automatically get the list of holidays from a date range in New York State.
     """
 
     nyc_holidays = holidays.US(state="NY", years=range(yr_min, yr_max))
@@ -29,9 +16,7 @@ def get_nyc_holidays(yr_min: int = 2023, yr_max: int = 2026):
     return sorted(nyc_holidays)
 
 
-def feature_eng(
-    df: pd.DataFrame, nyc_holidays: list[str], export_dataset: bool = True
-) -> pd.DataFrame:
+def feature_eng(df: pd.DataFrame, nyc_holidays: list[str]) -> pd.DataFrame:
     """
     Applies feature engineering on the time series dataframe.
 
@@ -57,9 +42,13 @@ def feature_eng(
     -------
     pd.DataFrame
         A transformed DataFrame with engineered features and target variable.
+
+    feature_names
+        A list of feature names as a result of feature engineering.
     """
 
     df = df.copy()
+    df["ride_date"] = pd.to_datetime(df["ride_date"])
 
     # Date-based features
     df["day_of_week"] = df["ride_date"].dt.dayofweek
@@ -97,30 +86,7 @@ def feature_eng(
     df["t+7d"] = df["total_rides"].shift(-7)
 
     # Drop rows with NaNs
-    df = (
-        df
-        # .drop("total_rides", axis=1)
-        .dropna()
-    )
+    df = df.dropna()
+    feature_names = df.drop(columns=["total_rides"]).columns.to_list()
 
-    return df
-
-
-def export_feature_eng_data(df: pd.DataFrame, export_dir: str) -> None:
-    """
-    Exports the feature engineered dataset to the processed directory in parquet format.
-
-    Parameters:
-    ----------
-    df : pd.DataFrame
-        DataFrame containing the feature-engineered dataset.
-
-    export_dir : str
-        Path to export the feature-engineered dataset.
-    """
-
-    # Export dataset
-    filename = f"{export_dir}/feature_engineered_data.parquet"
-    df.to_parquet(filename, compression="gzip", index=False)
-
-    print(f"Exported feature-engineered data to {export_dir}")
+    return df, feature_names

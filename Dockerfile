@@ -9,6 +9,8 @@ RUN pip install --no-cache-dir --index-url https://pypi.tuna.tsinghua.edu.cn/sim
 COPY src/ ./src/
 RUN mkdir /app/models /app/reports /app/logs
 VOLUME ["/app/data", "/app/models", "/app/reports", "/app/logs"]
+RUN mkdir -p /mlflow/artifacts && \
+    chmod 777 /mlflow/artifacts
 CMD ["python", "src/run_pipeline.py"]
 # docker build -t nyc_bike_demand_forecasting .
 # docker run --rm \

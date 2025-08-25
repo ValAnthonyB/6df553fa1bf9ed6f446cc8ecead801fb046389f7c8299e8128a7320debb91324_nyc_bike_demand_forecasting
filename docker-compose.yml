@@ -1,45 +1,61 @@
 ---
 version: "3.9"
+
 x-airflow-common: &airflow-common
-  image: apache/airflow:3.0.3
+  image: apache/airflow:2.10.3
   environment:
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__CORE__FERNET_KEY: ""
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >
-      postgresql+psycopg2://airflow:airflow@postgres/airflow
-    AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
-    AIRFLOW__CORE__AUTH_MANAGER: >
-      "airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager"
-    _PIP_ADDITIONAL_REQUIREMENTS: "apache-airflow-providers-fab"
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth"
   volumes:
     - ./deploy/airflow/dags:/opt/airflow/dags
     - ./deploy/airflow/logs:/opt/airflow/logs
+    - ./requirements.txt:/opt/airflow/requirements.txt
     - ./src:/opt/airflow/src
     - ./data:/opt/airflow/data
     - ./models:/opt/airflow/models
     - ./reports:/opt/airflow/reports
     - ./tests:/opt/airflow/tests
     - ./logs:/opt/airflow/project_logs
-  depends_on:
-    postgres:
-      condition: service_healthy
+    - mlflow-artifacts:/mlflow/artifacts
 
 services:
   postgres:
-    image: postgres:15
+    image: postgres:15.8-alpine
     environment:
-      POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
-      POSTGRES_DB: airflow
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
-      interval: 10s
-      retries: 5
-      timeout: 5s
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      retries: 3
+      start_period: 5s
+    restart: always
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    ports:
+      - "5000:5000"
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://mlflow:mlflow@postgres:5432/mlflow
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlflow/artifacts
+    volumes:
+      - mlflow-artifacts:/mlflow/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
 
   airflow-init:
     <<: *airflow-common
@@ -48,6 +64,13 @@ services:
       - -c
       - |
         set -e
+        echo "Waiting for database to be ready..."
+        until pg_isready -h postgres -p 5432 -U postgres; do
+          echo "Waiting for postgres..."
+          sleep 2
+        done
+        echo "Installing additional packages from requirements.txt..."
+        pip install -r /opt/airflow/requirements.txt
         echo "Running database migration..."
         airflow db migrate
         echo "Creating admin user..."
@@ -60,28 +83,51 @@ services:
           --password admin
         echo "Initialization complete!"
     restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
-  airflow-api:
+  airflow-webserver:
     <<: *airflow-common
-    command: api-server  # This is correct for Airflow 3.0.3
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        pip install -r /opt/airflow/requirements.txt
+        exec airflow webserver
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 10
+      start_period: 30s
     restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
 
   airflow-scheduler:
     <<: *airflow-common
-    command: scheduler
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        pip install -r /opt/airflow/requirements.txt
+        exec airflow scheduler
     restart: always
-
-  airflow-dag-processor:
-    <<: *airflow-common
-    command: dag-processor
-    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-webserver:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
 
 volumes:
+  mlflow-artifacts:
   postgres-db-volume:
+  
