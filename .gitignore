@@ -2,7 +2,7 @@
 data/
 models/
 deploy/*
-!deploy/airflow/
+!deploy/airflow/dags/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
